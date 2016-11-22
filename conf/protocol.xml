@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocols>
+
+	<!-- 客户端请求登录 -->
+	<protocol name="c2l_login">
+		<mainCode>8</mainCode>
+		<subCode>1</subCode>
+		<field name="uuid" type="String"></field>
+	</protocol>
+	<!-- 客户端登录返回 -->
+	<protocol name="l2c_login">
+		<mainCode>8</mainCode>
+		<subCode>2</subCode>
+		<field name="name" type="String"/>
+		<field name="coin" type="long"/>
+		<field name="token" type="String"/>
+		<field name="serverlist" type="obj" array="true">
+			<field name="name"/>
+			<field name="address"/>
+			<field name="port"/>
+			<field name="status"/> <!-- 0表示服务器离线，1表示在线 -->
+		</field>
+	</protocol>
+	
+	
+	
+	
+	
+	
+	
+	
+	<protocol name="g2l_login">
+		<mainCode>1</mainCode>
+		<subCode>1</subCode>
+		<field name="serverId" type="int"/>
+	</protocol>
+	
+	
+</protocols>
