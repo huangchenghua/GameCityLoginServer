@@ -1,11 +1,11 @@
 package com.gz.gamecity.login.service;
 
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
@@ -16,8 +16,15 @@ import com.gz.gamecity.login.protocol.ProtocolsField;
 import com.gz.websocket.msg.BaseMsg;
 import com.gz.websocket.msg.ProtocolMsg;
 
-public class GameServerService implements LogicHandler {
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 
+public class GameServerService implements LogicHandler {
+	
+	private static final Logger log=Logger.getLogger(GameServerService.class);
+	
+	private static final AttributeKey<GameServer> NETTY_CHANNEL_KEY = AttributeKey.valueOf("gameServer");
+	
 	private static GameServerService instance;
 	
 	private HashMap<Integer, GameServer> map_server=new HashMap<Integer, GameServer>();
@@ -48,8 +55,6 @@ public class GameServerService implements LogicHandler {
 			List serverlist = servers.getChildren("server");
 			for (Iterator iter = serverlist.iterator(); iter.hasNext();) {
 				Element server = (Element) iter.next();
-				String email = server.getAttributeValue("email");
-				System.out.println(email);
 				String name = server.getAttributeValue("name");
 				System.out.println(name);
 				int serverId = Integer.parseInt(server.getChildText("serverId"));
@@ -80,7 +85,11 @@ public class GameServerService implements LogicHandler {
 				remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
 				if(!remoteAdd.equals(gs.getHost()))
 					msg.getChannel().close();
-				
+				gs.setChannel(msg.getChannel());
+				gs.setStatus(GameServer.STATUS_ONLINE);
+				Attribute<GameServer> att= msg.getChannel().attr(NETTY_CHANNEL_KEY);
+				att.setIfAbsent(gs);
+				log.info("游戏服务器'"+gs.getName()+"'连接成功");
 				break;
 		}
 			

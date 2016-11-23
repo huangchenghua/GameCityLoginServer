@@ -2,7 +2,7 @@ package com.gz.gamecity.login;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
@@ -13,7 +13,7 @@ public class LSMsgReceiver extends Thread {
 	private static final Logger log=Logger.getLogger(LSMsgReceiver.class);
 	private static LSMsgReceiver instance;
 	
-	private LinkedBlockingDeque<BaseMsg> queue = new LinkedBlockingDeque<BaseMsg>();
+	private LinkedBlockingQueue<BaseMsg> queue = new LinkedBlockingQueue<BaseMsg>();
 	
 	private Map<Integer, LogicHandler> handlers=new HashMap<Integer, LogicHandler>();
 	
@@ -29,7 +29,11 @@ public class LSMsgReceiver extends Thread {
 	}
 	
 	public void addMsg(BaseMsg msg){
-		queue.add(msg);
+		try {
+			queue.put(msg);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Override

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import com.alibaba.fastjson.JSONObject;
+import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.bean.Player;
 import com.gz.gamecity.login.db.PlayerDao;
@@ -18,7 +19,7 @@ import io.netty.util.AttributeKey;
 
 public class PlayerLoginService implements LogicHandler {
 	
-	public static final AttributeKey<Player> NETTY_CHANNEL_KEY = AttributeKey.valueOf("player");
+	private static final AttributeKey<Player> NETTY_CHANNEL_KEY = AttributeKey.valueOf("player");
 	
 	private static HashMap<String, Player> map_loginPlayer=new HashMap<String, Player>();
 	
@@ -81,7 +82,9 @@ public class PlayerLoginService implements LogicHandler {
 			i++;
 		}
 		json.put(ProtocolsField.L2c_login.SERVERLIST, serverArray);
-		player.write(json);
+		cMsg.clear();
+		cMsg.setJson(json);
+		PlayerMsgSender.getInstance().addMsg(cMsg);
 	}
 
 	private Player handleRegist(String uuid) {

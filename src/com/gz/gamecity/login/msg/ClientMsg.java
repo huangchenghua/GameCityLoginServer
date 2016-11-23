@@ -1,7 +1,10 @@
 package com.gz.gamecity.login.msg;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.gz.websocket.msg.BaseMsg;
+
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 public class ClientMsg extends BaseMsg {
 	private JSONObject json;
@@ -28,4 +31,13 @@ public class ClientMsg extends BaseMsg {
 		
 	}
 	
+	@Override
+	public void clear() {
+		super.clear();
+		json = null;
+	}
+	
+	public void sendSelf(){
+		channel.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(json)));
+	}
 }

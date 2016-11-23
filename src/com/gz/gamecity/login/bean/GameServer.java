@@ -1,5 +1,8 @@
 package com.gz.gamecity.login.bean;
 
+import com.alibaba.fastjson.JSONObject;
+import com.gz.websocket.msg.ProtocolMsg;
+
 import io.netty.channel.Channel;
 
 public class GameServer {
@@ -51,5 +54,10 @@ public class GameServer {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+	public void wirite(JSONObject json){
+		ProtocolMsg msg = new ProtocolMsg();
+		String body = json.toJSONString();
+		msg.setContent(body);
+		channel.writeAndFlush(msg);
+	}
 }

@@ -42,7 +42,9 @@ public class LoginServiceMain {
 	
 	public void initWebsocket(){
 		
+		GameServerMsgSender.getInstance().start();
 		
+		PlayerMsgSender.getInstance().start();
 		
 		final WebSocketServer webSocketServer=new WebSocketServer(new PlayerMsgHandler());
 		Thread t1 = new Thread(){
