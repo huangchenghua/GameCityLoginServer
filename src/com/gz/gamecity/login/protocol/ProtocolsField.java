@@ -7,6 +7,7 @@ public class ProtocolsField{
 		public static final int mainCode_value = 8;
 		public static final int subCode_value = 1;
 		public static final String UUID = "uuid";
+		public static final String TOKEN = "token";
 
 	}
 	public static final class L2c_login{

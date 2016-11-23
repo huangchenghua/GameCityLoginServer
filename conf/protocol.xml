@@ -5,7 +5,8 @@
 	<protocol name="c2l_login">
 		<mainCode>8</mainCode>
 		<subCode>1</subCode>
-		<field name="uuid" type="String"></field>
+		<field name="uuid" type="String"/>
+		<field name="token" type="String"/>
 	</protocol>
 	<!-- 客户端登录返回 -->
 	<protocol name="l2c_login">
@@ -34,6 +35,12 @@
 		<subCode>1</subCode>
 		<field name="serverId" type="int"/>
 	</protocol>
-	
+	<!-- 以下是内部协议号 -->
+	<protocol name="inner_login">
+		<mainCode>8</mainCode>
+		<subCode>11</subCode>
+		<field name="uuid" type="String"/>
+		<field name="token" type="String"/>
+	</protocol>
 	
 </protocols>

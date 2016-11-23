@@ -12,6 +12,7 @@ import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
 import com.gz.gamecity.login.msg.ClientMsg;
 import com.gz.gamecity.login.protocol.ProtocolsField;
+import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.websocket.msg.BaseMsg;
 
 import io.netty.util.Attribute;
@@ -43,7 +44,7 @@ public class PlayerLoginService implements LogicHandler {
 		int subCode = cMsg.getJson().getIntValue("subCode");
 		switch (subCode) {
 		case ProtocolsField.C2l_login.subCode_value:
-			handleLogin(cMsg);
+			handlePlayerLogin(cMsg);
 			break;
 
 		default:
@@ -51,6 +52,10 @@ public class PlayerLoginService implements LogicHandler {
 		}
 	}
 
+	private void handlePlayerLogin(ClientMsg cMsg){
+		SdkVerify.getInstance().addMsg(cMsg);
+	}
+	
 	private void handleLogin(ClientMsg cMsg) {
 		String uuid = cMsg.getJson().getString(ProtocolsField.C2l_login.UUID);
 		Player player = PlayerDao.getPlayer(uuid);

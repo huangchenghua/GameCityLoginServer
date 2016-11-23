@@ -9,6 +9,10 @@
 	<classpathentry kind="lib" path="lib/jedis-2.8.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-pool2-2.0.jar"/>
 	<classpathentry kind="lib" path="lib/jdom.jar"/>
+	<classpathentry kind="lib" path="lib/httpclient-4.5.1.jar"/>
+	<classpathentry kind="lib" path="lib/httpclient-cache-4.3.5.jar"/>
+	<classpathentry kind="lib" path="lib/httpcore-4.4.3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/WebSocketFramework"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

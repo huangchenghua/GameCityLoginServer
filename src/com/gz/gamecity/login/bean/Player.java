@@ -2,6 +2,7 @@ package com.gz.gamecity.login.bean;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.gz.gamecity.login.PlayerMsgSender;
 
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -56,7 +57,8 @@ public class Player {
 		player.setName("游客");
 		return player;
 	}
-	public void write(JSONObject json){
-		channel.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(json)));
-	}
+//	public void write(JSONObject json){
+//		PlayerMsgSender.getInstance()
+//		channel.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(json)));
+//	}
 }

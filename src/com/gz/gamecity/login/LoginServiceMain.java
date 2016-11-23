@@ -6,6 +6,7 @@ import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
 import com.gz.gamecity.login.protocol.ProtocolsField;
+import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.GameServerService;
 import com.gz.gamecity.login.service.PlayerLoginService;
 import com.gz.util.Config;
@@ -45,6 +46,8 @@ public class LoginServiceMain {
 		GameServerMsgSender.getInstance().start();
 		
 		PlayerMsgSender.getInstance().start();
+		
+		SdkVerify.getInstance().start();
 		
 		final WebSocketServer webSocketServer=new WebSocketServer(new PlayerMsgHandler());
 		Thread t1 = new Thread(){
