@@ -7,10 +7,10 @@ import org.apache.log4j.Logger;
 import com.gz.gamecity.login.LSMsgReceiver;
 import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.config.ConfigField;
-import com.gz.gamecity.login.msg.ClientMsg;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.Config;
 import com.gz.util.HttpXmlClient;
+import com.gz.websocket.msg.ClientMsg;
 
 public class SdkVerify extends Thread{
 	private static final Logger log=Logger.getLogger(SdkVerify.class);

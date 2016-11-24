@@ -10,10 +10,10 @@ import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
-import com.gz.gamecity.login.msg.ClientMsg;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.websocket.msg.BaseMsg;
+import com.gz.websocket.msg.ClientMsg;
 
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
@@ -53,6 +53,7 @@ public class PlayerLoginService implements LogicHandler {
 			break;
 		}
 	}
+
 
 	private void handlePlayerLogin(ClientMsg cMsg){
 		SdkVerify.getInstance().addMsg(cMsg);
@@ -98,6 +99,14 @@ public class PlayerLoginService implements LogicHandler {
 		Player player = Player.createPlayer(uuid);
 		PlayerDao.insertPlayer(player);
 		return player;
+	}
+	
+	public Player checkGameToken(String uuid,String gameToken){
+		Player player=map_loginPlayer.get(uuid);
+		if(player!=null && player.getGameToken().equals(gameToken)){
+			return player;
+		}
+		return null;
 	}
 	
 	//

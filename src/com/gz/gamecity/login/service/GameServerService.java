@@ -10,6 +10,7 @@ import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 
+import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.GameServerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.logic.LogicHandler;
@@ -78,27 +79,56 @@ public class GameServerService implements LogicHandler {
 		int subCode = pMsg.getJson().getIntValue(Protocols.SUBCODE);
 		switch (subCode){
 			case Protocols.G2l_login.subCode_value:
-				int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
-				GameServer gs = map_server.get(serverId);
-				if(gs==null)
-					msg.getChannel().close();
-				String remoteAdd = msg.getChannel().remoteAddress().toString().substring(1);
-				remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
-				if(!remoteAdd.equals(gs.getHost()))
-					msg.getChannel().close();
-				gs.setChannel(msg.getChannel());
-				gs.setStatus(GameServer.STATUS_ONLINE);
-				Attribute<GameServer> att= msg.getChannel().attr(NETTY_CHANNEL_KEY);
-				att.setIfAbsent(gs);
-				log.info("游戏服务器'"+gs.getName()+"'连接成功");
-				pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
-				pMsg.getJson().put(Protocols.L2g_login.OPT, 1);
-				GameServerMsgSender.getInstance().addMsg(pMsg);
+				handleGameServerLogin(pMsg);
+				break;
+			case Protocols.G2l_playerVerify.subCode_value:
+				if(checkServer(pMsg))
+					verifyGameToken(pMsg);
 				break;
 		}
-			
-		
-		
+	}
+	
+	private void handleGameServerLogin(ProtocolMsg pMsg){
+		int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
+		GameServer gs = map_server.get(serverId);
+		if(gs==null)
+			pMsg.getChannel().close();
+		String remoteAdd = pMsg.getChannel().remoteAddress().toString().substring(1);
+		remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
+		if(!remoteAdd.equals(gs.getHost()))
+			pMsg.getChannel().close();
+		gs.setChannel(pMsg.getChannel());
+		gs.setStatus(GameServer.STATUS_ONLINE);
+		Attribute<GameServer> att= pMsg.getChannel().attr(NETTY_CHANNEL_KEY);
+		att.setIfAbsent(gs);
+		log.info("游戏服务器'"+gs.getName()+"'连接成功");
+		pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
+		pMsg.getJson().put(Protocols.L2g_login.OPT, 1);
+		GameServerMsgSender.getInstance().addMsg(pMsg);
 	}
 
+	private void verifyGameToken(ProtocolMsg pMsg) {
+		String uuid=pMsg.getJson().getString(Protocols.G2l_playerVerify.UUID);
+		String gameToken=pMsg.getJson().getString(Protocols.G2l_playerVerify.GAMETOKEN);
+		Player player=PlayerLoginService.getInstance().checkGameToken(uuid, gameToken);
+		pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_playerVerify.subCode_value);
+		if(player!=null){
+			pMsg.getJson().put(Protocols.L2g_playerVerify.NAME, player.getName());
+			pMsg.getJson().put(Protocols.L2g_playerVerify.COIN, player.getCoin());
+		}else{
+			pMsg.getJson().put(Protocols.ERRORCODE, "验证失败");
+		}
+		GameServerMsgSender.getInstance().addMsg(pMsg);
+	}
+
+	private boolean checkServer(ProtocolMsg pMsg){
+		Attribute<GameServer> attr = pMsg.getChannel().attr(NETTY_CHANNEL_KEY);  
+		GameServer gs = attr.get(); 
+		if(gs!=null){
+			return true;
+		}
+		pMsg.getChannel().close();
+		return false;
+	}
+	
 }

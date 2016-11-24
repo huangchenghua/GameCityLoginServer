@@ -3,8 +3,8 @@ package com.gz.gamecity.login.handler.impl;
 
 
 import com.gz.gamecity.login.LSMsgReceiver;
-import com.gz.gamecity.login.msg.ClientMsg;
 import com.gz.websocket.msg.BaseMsg;
+import com.gz.websocket.msg.ClientMsg;
 import com.gz.websocket.server.ServerMsgHandler;
 
 import io.netty.channel.Channel;

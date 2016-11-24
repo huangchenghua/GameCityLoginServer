@@ -2,8 +2,8 @@ package com.gz.gamecity.login;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gz.gamecity.login.msg.ClientMsg;
 import com.gz.websocket.msg.BaseMsg;
+import com.gz.websocket.msg.ClientMsg;
 
 public class PlayerMsgSender extends Thread{
 	private static PlayerMsgSender instance;
