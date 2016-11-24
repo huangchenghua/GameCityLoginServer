@@ -5,14 +5,14 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import com.alibaba.fastjson.JSONObject;
+import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
-import com.gz.gamecity.login.bean.Player;
 import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
 import com.gz.gamecity.login.msg.ClientMsg;
-import com.gz.gamecity.login.protocol.ProtocolsField;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
+import com.gz.gamecity.protocol.Protocols;
 import com.gz.websocket.msg.BaseMsg;
 
 import io.netty.util.Attribute;
@@ -43,10 +43,12 @@ public class PlayerLoginService implements LogicHandler {
 		ClientMsg cMsg=(ClientMsg)msg;
 		int subCode = cMsg.getJson().getIntValue("subCode");
 		switch (subCode) {
-		case ProtocolsField.C2l_login.subCode_value:
+		case Protocols.C2l_login.subCode_value:
 			handlePlayerLogin(cMsg);
 			break;
-
+		case Protocols.Inner_login.subCode_value:
+			handleLogin(cMsg);
+			break;
 		default:
 			break;
 		}
@@ -57,12 +59,12 @@ public class PlayerLoginService implements LogicHandler {
 	}
 	
 	private void handleLogin(ClientMsg cMsg) {
-		String uuid = cMsg.getJson().getString(ProtocolsField.C2l_login.UUID);
+		String uuid = cMsg.getJson().getString(Protocols.Inner_login.UUID);
 		Player player = PlayerDao.getPlayer(uuid);
 		if(player == null){
 			player = handleRegist(uuid);
 		}
-		player.setToken(UUID.randomUUID().toString());
+		player.setGameToken(UUID.randomUUID().toString());
 		player.setChannel(cMsg.getChannel());
 		map_loginPlayer.put(uuid, player);
 		Attribute<Player> att= cMsg.getChannel().attr(NETTY_CHANNEL_KEY);
@@ -71,22 +73,22 @@ public class PlayerLoginService implements LogicHandler {
 		// TODO 返回客户端数据
 		
 		JSONObject json=new JSONObject();
-		json.put(ProtocolsField.MAINCODE, ProtocolsField.L2c_login.mainCode_value);
-		json.put(ProtocolsField.SUBCODE, ProtocolsField.L2c_login.subCode_value);
-		json.put(ProtocolsField.L2c_login.TOKEN, player.getToken());
+		json.put(Protocols.MAINCODE, Protocols.L2c_login.mainCode_value);
+		json.put(Protocols.SUBCODE, Protocols.L2c_login.subCode_value);
+		json.put(Protocols.L2c_login.GAMETOKEN, player.getGameToken());
 		Collection<GameServer> servers=GameServerService.getInstance().getMap_server().values();
 		JSONObject[] serverArray=new JSONObject[servers.size()];
 		int i=0;
 		for (GameServer server : servers) {
 			JSONObject j=new JSONObject();
-			j.put(ProtocolsField.L2c_login.Serverlist.NAME, server.getName()); 
-			j.put(ProtocolsField.L2c_login.Serverlist.ADDRESS, server.getHost());
-			j.put(ProtocolsField.L2c_login.Serverlist.PORT, server.getClientPort());
-			j.put(ProtocolsField.L2c_login.Serverlist.STATUS, server.getStatus());
+			j.put(Protocols.L2c_login.Serverlist.NAME, server.getName()); 
+			j.put(Protocols.L2c_login.Serverlist.ADDRESS, server.getHost());
+			j.put(Protocols.L2c_login.Serverlist.PORT, server.getClientPort());
+			j.put(Protocols.L2c_login.Serverlist.STATUS, server.getStatus());
 			serverArray[i]=j;
 			i++;
 		}
-		json.put(ProtocolsField.L2c_login.SERVERLIST, serverArray);
+		json.put(Protocols.L2c_login.SERVERLIST, serverArray);
 		cMsg.clear();
 		cMsg.setJson(json);
 		PlayerMsgSender.getInstance().addMsg(cMsg);

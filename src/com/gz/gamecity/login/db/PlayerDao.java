@@ -3,7 +3,7 @@ package com.gz.gamecity.login.db;
 import java.util.HashMap;
 import java.util.List;
 
-import com.gz.gamecity.login.bean.Player;
+import com.gz.gamecity.bean.Player;
 
 import redis.clients.jedis.Jedis;
 

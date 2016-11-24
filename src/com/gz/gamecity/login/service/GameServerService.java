@@ -10,9 +10,10 @@ import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 
+import com.gz.gamecity.login.GameServerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.logic.LogicHandler;
-import com.gz.gamecity.login.protocol.ProtocolsField;
+import com.gz.gamecity.protocol.Protocols;
 import com.gz.websocket.msg.BaseMsg;
 import com.gz.websocket.msg.ProtocolMsg;
 
@@ -74,10 +75,10 @@ public class GameServerService implements LogicHandler {
 	@Override
 	public void handleMsg(BaseMsg msg) {
 		ProtocolMsg pMsg = (ProtocolMsg) msg;
-		int subCode = pMsg.getJson().getIntValue(ProtocolsField.SUBCODE);
+		int subCode = pMsg.getJson().getIntValue(Protocols.SUBCODE);
 		switch (subCode){
-			case ProtocolsField.G2l_login.subCode_value:
-				int serverId = pMsg.getJson().getIntValue(ProtocolsField.G2l_login.SERVERID);
+			case Protocols.G2l_login.subCode_value:
+				int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
 				GameServer gs = map_server.get(serverId);
 				if(gs==null)
 					msg.getChannel().close();
@@ -90,6 +91,9 @@ public class GameServerService implements LogicHandler {
 				Attribute<GameServer> att= msg.getChannel().attr(NETTY_CHANNEL_KEY);
 				att.setIfAbsent(gs);
 				log.info("游戏服务器'"+gs.getName()+"'连接成功");
+				pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
+				pMsg.getJson().put(Protocols.L2g_login.OPT, 1);
+				GameServerMsgSender.getInstance().addMsg(pMsg);
 				break;
 		}
 			

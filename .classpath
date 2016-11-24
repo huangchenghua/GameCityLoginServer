@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="lib/httpcore-4.4.3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/WebSocketFramework"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/GameCityBase"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

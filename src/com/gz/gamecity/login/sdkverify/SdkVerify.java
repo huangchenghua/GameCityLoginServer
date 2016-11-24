@@ -1,34 +1,16 @@
 package com.gz.gamecity.login.sdkverify;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 
-import com.alibaba.fastjson.JSONObject;
+import com.gz.gamecity.login.LSMsgReceiver;
+import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.msg.ClientMsg;
-import com.gz.gamecity.login.protocol.ProtocolsField;
+import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.Config;
 import com.gz.util.HttpXmlClient;
-import com.gz.websocket.msg.BaseMsg;
 
 public class SdkVerify extends Thread{
 	private static final Logger log=Logger.getLogger(SdkVerify.class);
@@ -53,12 +35,17 @@ public class SdkVerify extends Thread{
 				ClientMsg msg = queue.take();
 				msg.sendSelf();
 				StringBuffer url=new StringBuffer(Config.instance().getSValue(ConfigField.SDKVERIFYURL));
-				url.append("?token=").append(msg.getJson().getString(ProtocolsField.C2l_login.TOKEN)).append("&");
-				url.append("?uuid=").append(msg.getJson().getString(ProtocolsField.C2l_login.UUID)).append("&");
+				url.append("?token=").append(msg.getJson().getString(Protocols.C2l_login.SDKTOKEN)).append("&");
+				url.append("?uuid=").append(msg.getJson().getString(Protocols.C2l_login.UUID)).append("&");
 				url.append("?appId=").append(Config.instance().getSValue(ConfigField.APPID));
 				String result=HttpXmlClient.get(url.toString());
 
 				System.out.println(result);
+				if(result!=null && result.indexOf("status\":1")>0){
+					verifySuc(msg);
+				}else{
+					verifyFailed(msg);
+				}
 //				String result = http(url, params);
 				
 			} catch (Exception e) {
@@ -76,6 +63,18 @@ public class SdkVerify extends Thread{
 		}
 	}
 	
+	private void verifySuc(ClientMsg msg){
+		msg.getJson().put(Protocols.SUBCODE, Protocols.Inner_login.subCode_value);
+		LSMsgReceiver.getInstance().addMsg(msg);
+	}
+	
+	private void verifyFailed(ClientMsg msg){
+		msg.getJson().put(Protocols.SUBCODE, Protocols.L2c_login.subCode_value);
+		msg.getJson().put(Protocols.ERRORCODE, "账号验证失败");
+		PlayerMsgSender.getInstance().addMsg(msg);
+	}
+	
+//	private void 
 
 	
     

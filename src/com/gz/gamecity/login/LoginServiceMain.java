@@ -5,10 +5,10 @@ import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
-import com.gz.gamecity.login.protocol.ProtocolsField;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.GameServerService;
 import com.gz.gamecity.login.service.PlayerLoginService;
+import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.Config;
 import com.gz.websocket.protocol.server.ProtocolServer;
 import com.gz.websocket.server.WebSocketServer;
@@ -31,8 +31,8 @@ public class LoginServiceMain {
 	
 	public void startLogic()
 	{
-		LSMsgReceiver.getInstance().registHandler(ProtocolsField.C2l_login.mainCode_value, PlayerLoginService.getInstance());
-		LSMsgReceiver.getInstance().registHandler(ProtocolsField.G2l_login.mainCode_value, GameServerService.getInstance());
+		LSMsgReceiver.getInstance().registHandler(Protocols.C2l_login.mainCode_value, PlayerLoginService.getInstance());
+		LSMsgReceiver.getInstance().registHandler(Protocols.G2l_login.mainCode_value, GameServerService.getInstance());
 		LSMsgReceiver.getInstance().start();
 	}
 	public void initDB(){
