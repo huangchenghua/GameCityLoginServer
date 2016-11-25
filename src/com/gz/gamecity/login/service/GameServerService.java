@@ -84,10 +84,16 @@ public class GameServerService implements LogicHandler {
 			case Protocols.G2l_playerVerify.subCode_value:
 				if(checkServer(pMsg))
 					verifyGameToken(pMsg);
+			case Protocols.G2l_playerLogout.subCode_value:
+				handlePlayerLogout(pMsg);
 				break;
 		}
 	}
 	
+	private void handlePlayerLogout(ProtocolMsg pMsg) {
+		
+	}
+
 	private void handleGameServerLogin(ProtocolMsg pMsg){
 		int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
 		GameServer gs = map_server.get(serverId);

@@ -1,12 +1,10 @@
 package com.gz.gamecity.login.service;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.UUID;
 
 import com.alibaba.fastjson.JSONObject;
 import com.gz.gamecity.bean.Player;
-import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
@@ -15,14 +13,10 @@ import com.gz.gamecity.protocol.Protocols;
 import com.gz.websocket.msg.BaseMsg;
 import com.gz.websocket.msg.ClientMsg;
 
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
 public class PlayerLoginService implements LogicHandler {
 	
-	private static final AttributeKey<Player> NETTY_CHANNEL_KEY = AttributeKey.valueOf("player");
 	
-	private static HashMap<String, Player> map_loginPlayer=new HashMap<String, Player>();
 	
 	private static PlayerLoginService instance;
 	
@@ -67,9 +61,7 @@ public class PlayerLoginService implements LogicHandler {
 		}
 		player.setGameToken(UUID.randomUUID().toString());
 		player.setChannel(cMsg.getChannel());
-		map_loginPlayer.put(uuid, player);
-		Attribute<Player> att= cMsg.getChannel().attr(NETTY_CHANNEL_KEY);
-		att.setIfAbsent(player);
+		PlayerLoginCache.getInstance().put(uuid, player, 1000*60*10);
 		
 		// TODO 返回客户端数据
 		
@@ -92,7 +84,8 @@ public class PlayerLoginService implements LogicHandler {
 		json.put(Protocols.L2c_login.SERVERLIST, serverArray);
 		cMsg.clear();
 		cMsg.setJson(json);
-		PlayerMsgSender.getInstance().addMsg(cMsg);
+		cMsg.sendSelf();
+		cMsg.getChannel().close();
 	}
 
 	private Player handleRegist(String uuid) {
@@ -102,15 +95,11 @@ public class PlayerLoginService implements LogicHandler {
 	}
 	
 	public Player checkGameToken(String uuid,String gameToken){
-		Player player=map_loginPlayer.get(uuid);
+		Player player=PlayerLoginCache.getInstance().getV(uuid);
 		if(player!=null && player.getGameToken().equals(gameToken)){
 			return player;
 		}
 		return null;
 	}
 	
-	//
-	public void Logout(){
-		
-	}
 }

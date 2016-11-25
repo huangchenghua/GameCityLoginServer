@@ -1,12 +1,14 @@
 package com.gz.gamecity.login;
 
 
+import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.GameServerService;
+import com.gz.gamecity.login.service.PlayerLoginCache;
 import com.gz.gamecity.login.service.PlayerLoginService;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.Config;
@@ -31,6 +33,8 @@ public class LoginServiceMain {
 	
 	public void startLogic()
 	{
+		PlayerLoginCache.getInstance();
+		
 		LSMsgReceiver.getInstance().registHandler(Protocols.C2l_login.mainCode_value, PlayerLoginService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(Protocols.G2l_login.mainCode_value, GameServerService.getInstance());
 		LSMsgReceiver.getInstance().start();

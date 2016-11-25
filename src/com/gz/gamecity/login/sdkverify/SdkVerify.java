@@ -71,7 +71,9 @@ public class SdkVerify extends Thread{
 	private void verifyFailed(ClientMsg msg){
 		msg.getJson().put(Protocols.SUBCODE, Protocols.L2c_login.subCode_value);
 		msg.getJson().put(Protocols.ERRORCODE, "账号验证失败");
-		PlayerMsgSender.getInstance().addMsg(msg);
+		msg.sendSelf();
+		msg.getChannel().close();
+		//PlayerMsgSender.getInstance().addMsg(msg);
 	}
 	
 //	private void 
