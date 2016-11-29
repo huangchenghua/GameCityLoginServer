@@ -6,11 +6,13 @@ import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
+import com.gz.gamecity.login.handler.impl.PlayerLoginHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.GameServerService;
 import com.gz.gamecity.login.service.PlayerLoginCache;
 import com.gz.gamecity.login.service.PlayerLoginService;
 import com.gz.gamecity.protocol.Protocols;
+import com.gz.http.HttpServer;
 import com.gz.util.Config;
 import com.gz.websocket.protocol.server.ProtocolServer;
 import com.gz.websocket.server.WebSocketServer;
@@ -52,6 +54,21 @@ public class LoginServiceMain {
 		PlayerMsgSender.getInstance().start();
 		
 		SdkVerify.getInstance().start();
+		
+		final HttpServer httpServer = new HttpServer();
+		httpServer.addHandler(new PlayerLoginHandler());
+		Thread t = new Thread(){
+			@Override
+			public void run() {
+				try {
+					httpServer.run(Config.instance().getIValue(ConfigField.HTTP_PORT));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.start();
+		
 		
 		final WebSocketServer webSocketServer=new WebSocketServer(new PlayerMsgHandler());
 		Thread t1 = new Thread(){

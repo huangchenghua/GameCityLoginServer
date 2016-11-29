@@ -10,8 +10,10 @@ import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.protocol.Protocols;
+import com.gz.http.HttpDecoderAndEncoder;
 import com.gz.websocket.msg.BaseMsg;
 import com.gz.websocket.msg.ClientMsg;
+import com.gz.websocket.msg.HttpMsg;
 
 
 public class PlayerLoginService implements LogicHandler {
@@ -34,7 +36,7 @@ public class PlayerLoginService implements LogicHandler {
 	@Override
 	public void handleMsg(BaseMsg msg) {
 //		System.out.println(msg);
-		ClientMsg cMsg=(ClientMsg)msg;
+		HttpMsg cMsg=(HttpMsg)msg;
 		int subCode = cMsg.getJson().getIntValue("subCode");
 		switch (subCode) {
 		case Protocols.C2l_login.subCode_value:
@@ -49,11 +51,11 @@ public class PlayerLoginService implements LogicHandler {
 	}
 
 
-	private void handlePlayerLogin(ClientMsg cMsg){
+	private void handlePlayerLogin(HttpMsg cMsg){
 		SdkVerify.getInstance().addMsg(cMsg);
 	}
 	
-	private void handleLogin(ClientMsg cMsg) {
+	private void handleLogin(HttpMsg cMsg) {
 		String uuid = cMsg.getJson().getString(Protocols.Inner_login.UUID);
 		Player player = PlayerDao.getPlayer(uuid);
 		if(player == null){
@@ -84,7 +86,7 @@ public class PlayerLoginService implements LogicHandler {
 		json.put(Protocols.L2c_login.SERVERLIST, serverArray);
 		cMsg.clear();
 		cMsg.setJson(json);
-		cMsg.sendSelf();
+		HttpDecoderAndEncoder.Response(cMsg.getCtx(), cMsg.getRequest(), json.toJSONString());
 		cMsg.getChannel().close();
 	}
 

@@ -61,10 +61,12 @@ public class GameServerService implements LogicHandler {
 				System.out.println(name);
 				int serverId = Integer.parseInt(server.getChildText("serverId"));
 				String host = server.getChildText("host");
+				int port =Integer.parseInt(server.getChildText("port"));
 				GameServer gs = new GameServer();
 				gs.setHost(host);
 				gs.setName(name);
 				gs.setServerId(serverId);
+				gs.setClientPort(port);
 				map_server.put(serverId, gs);
 				list_server.add(gs);
 			}
@@ -101,8 +103,11 @@ public class GameServerService implements LogicHandler {
 			pMsg.getChannel().close();
 		String remoteAdd = pMsg.getChannel().remoteAddress().toString().substring(1);
 		remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
-		if(!remoteAdd.equals(gs.getHost()))
-			pMsg.getChannel().close();
+		if(!remoteAdd.equals("127.0.0.1") && !remoteAdd.equals(gs.getHost())){
+			pMsg.closeChannel();;
+			log.warn("非法IP地址请求,address="+remoteAdd);
+			return;
+		}
 		gs.setChannel(pMsg.getChannel());
 		gs.setStatus(GameServer.STATUS_ONLINE);
 		Attribute<GameServer> att= pMsg.getChannel().attr(NETTY_CHANNEL_KEY);

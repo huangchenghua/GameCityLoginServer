@@ -9,5 +9,6 @@ public class ConfigField{
 	public static final String DB_INDEX = "db_index";
 	public static final String SDKVERIFYURL = "sdkVerifyUrl";
 	public static final String DB_HOST = "db_host";
+	public static final String HTTP_PORT = "http_port";
 
 }

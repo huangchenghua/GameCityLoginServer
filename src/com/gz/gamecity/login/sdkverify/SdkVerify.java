@@ -8,15 +8,17 @@ import com.gz.gamecity.login.LSMsgReceiver;
 import com.gz.gamecity.login.PlayerMsgSender;
 import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.protocol.Protocols;
+import com.gz.http.HttpDecoderAndEncoder;
 import com.gz.util.Config;
 import com.gz.util.HttpXmlClient;
 import com.gz.websocket.msg.ClientMsg;
+import com.gz.websocket.msg.HttpMsg;
 
 public class SdkVerify extends Thread{
 	private static final Logger log=Logger.getLogger(SdkVerify.class);
 	private static SdkVerify instance;
 	
-	private LinkedBlockingDeque<ClientMsg> queue=new LinkedBlockingDeque<ClientMsg>();
+	private LinkedBlockingDeque<HttpMsg> queue=new LinkedBlockingDeque<HttpMsg>();
 	
 	public static synchronized SdkVerify getInstance() {
 		if(instance==null)
@@ -32,8 +34,8 @@ public class SdkVerify extends Thread{
 	public void run() {
 		while(true){
 			try {
-				ClientMsg msg = queue.take();
-				msg.sendSelf();
+				HttpMsg msg = queue.take();
+//				msg.sendSelf();
 				StringBuffer url=new StringBuffer(Config.instance().getSValue(ConfigField.SDKVERIFYURL));
 				url.append("?token=").append(msg.getJson().getString(Protocols.C2l_login.SDKTOKEN)).append("&");
 				url.append("?uuid=").append(msg.getJson().getString(Protocols.C2l_login.UUID)).append("&");
@@ -43,6 +45,7 @@ public class SdkVerify extends Thread{
 				System.out.println(result);
 				if(result!=null && result.indexOf("status\":1")>0){
 					verifySuc(msg);
+//					verifyFailed(msg);
 				}else{
 					verifyFailed(msg);
 				}
@@ -55,7 +58,7 @@ public class SdkVerify extends Thread{
 		}
 	}
 	
-	public void addMsg(ClientMsg msg){
+	public void addMsg(HttpMsg msg){
 		try {
 			queue.put(msg);
 		} catch (InterruptedException e) {
@@ -63,33 +66,17 @@ public class SdkVerify extends Thread{
 		}
 	}
 	
-	private void verifySuc(ClientMsg msg){
+	private void verifySuc(HttpMsg msg){
 		msg.getJson().put(Protocols.SUBCODE, Protocols.Inner_login.subCode_value);
 		LSMsgReceiver.getInstance().addMsg(msg);
 	}
 	
-	private void verifyFailed(ClientMsg msg){
+	private void verifyFailed(HttpMsg msg){
+		
 		msg.getJson().put(Protocols.SUBCODE, Protocols.L2c_login.subCode_value);
-		msg.getJson().put(Protocols.ERRORCODE, "账号验证失败");
-		msg.sendSelf();
+		msg.getJson().put(Protocols.ERRORCODE, "failed");
+		HttpDecoderAndEncoder.Response(msg.getCtx(), msg.getRequest(), msg.getJson().toJSONString());
 		msg.getChannel().close();
-		//PlayerMsgSender.getInstance().addMsg(msg);
 	}
 	
-//	private void 
-
-	
-    
-//	public static void main(String[] args) {
-//		String url = "http://uc.hi7.cn/api/v1/user/login/validate/access_token";
-//		Map<String, String> params=new HashMap<String,String>();
-//		params.put("token", "e7555f29f22b56c113cca31ed37a2db0");
-//		url = url+"?";
-//		for (String key : params.keySet()) {
-//			url=url+key+"="+params.get(key)+"&";
-//		}
-//		url=url.substring(0,url.length()-1);
-//		String result=HttpXmlClient.get(url);
-//		System.out.println(result);
-//	}
 }
