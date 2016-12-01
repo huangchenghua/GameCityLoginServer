@@ -56,7 +56,8 @@ public class LSMsgReceiver extends Thread {
 		}
 	}
 	
-	public void registHandler(int mainCode,LogicHandler handler){
-		handlers.put(mainCode, handler);
+	
+	public void registHandler(LogicHandler handler){
+		handlers.put(handler.getMainCode(), handler);
 	}
 }

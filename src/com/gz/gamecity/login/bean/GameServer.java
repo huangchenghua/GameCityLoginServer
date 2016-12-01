@@ -60,4 +60,8 @@ public class GameServer {
 		msg.setContent(body);
 		channel.writeAndFlush(msg);
 	}
+	
+	public boolean isOnline(){
+		return status == STATUS_ONLINE;
+	}
 }

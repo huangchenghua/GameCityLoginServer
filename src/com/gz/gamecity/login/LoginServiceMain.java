@@ -8,10 +8,9 @@ import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
 import com.gz.gamecity.login.handler.impl.PlayerLoginHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
-import com.gz.gamecity.login.service.GameServerService;
-import com.gz.gamecity.login.service.PlayerLoginCache;
-import com.gz.gamecity.login.service.PlayerLoginService;
-import com.gz.gamecity.protocol.Protocols;
+import com.gz.gamecity.login.service.gameserver.GameServerService;
+import com.gz.gamecity.login.service.player.PlayerLoginService;
+import com.gz.gamecity.login.service.player.PlayerVerifyService;
 import com.gz.http.HttpServer;
 import com.gz.util.Config;
 import com.gz.websocket.protocol.server.ProtocolServer;
@@ -35,10 +34,11 @@ public class LoginServiceMain {
 	
 	public void startLogic()
 	{
-		PlayerLoginCache.getInstance();
+		PlayerManager.getInstance();
 		
-		LSMsgReceiver.getInstance().registHandler(Protocols.C2l_login.mainCode_value, PlayerLoginService.getInstance());
-		LSMsgReceiver.getInstance().registHandler(Protocols.G2l_login.mainCode_value, GameServerService.getInstance());
+		LSMsgReceiver.getInstance().registHandler(PlayerLoginService.getInstance());
+		LSMsgReceiver.getInstance().registHandler(GameServerService.getInstance());
+		LSMsgReceiver.getInstance().registHandler(new PlayerVerifyService());
 		LSMsgReceiver.getInstance().start();
 	}
 	public void initDB(){

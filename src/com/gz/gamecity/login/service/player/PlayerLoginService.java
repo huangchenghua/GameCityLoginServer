@@ -1,14 +1,16 @@
-package com.gz.gamecity.login.service;
+package com.gz.gamecity.login.service.player;
 
 import java.util.Collection;
 import java.util.UUID;
 
 import com.alibaba.fastjson.JSONObject;
 import com.gz.gamecity.bean.Player;
+import com.gz.gamecity.login.PlayerManager;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.logic.LogicHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
+import com.gz.gamecity.login.service.gameserver.GameServerService;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.http.HttpDecoderAndEncoder;
 import com.gz.websocket.msg.BaseMsg;
@@ -63,9 +65,9 @@ public class PlayerLoginService implements LogicHandler {
 		}
 		player.setGameToken(UUID.randomUUID().toString());
 		player.setChannel(cMsg.getChannel());
-		PlayerLoginCache.getInstance().put(uuid, player, 1000*60*10);
+		PlayerManager.getInstance().playerLogin(player);
+//		PlayerLoginCache.getInstance().put(uuid, player, 1000*60*10);
 		
-		// TODO 返回客户端数据
 		
 		JSONObject json=new JSONObject();
 		json.put(Protocols.MAINCODE, Protocols.L2c_login.mainCode_value);
@@ -97,11 +99,17 @@ public class PlayerLoginService implements LogicHandler {
 	}
 	
 	public Player checkGameToken(String uuid,String gameToken){
-		Player player=PlayerLoginCache.getInstance().getV(uuid);
+//		Player player=PlayerLoginCache.getInstance().getV(uuid);
+		Player player = PlayerManager.getInstance().getLoginPlayer(uuid);
 		if(player!=null && player.getGameToken().equals(gameToken)){
 			return player;
 		}
 		return null;
+	}
+
+	@Override
+	public int getMainCode() {
+		return Protocols.MainCode.PLAYER_LOGIN;
 	}
 	
 }

@@ -1,4 +1,4 @@
-package com.gz.gamecity.login.service;
+package com.gz.gamecity.login.service.gameserver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,29 +83,31 @@ public class GameServerService implements LogicHandler {
 			case Protocols.G2l_login.subCode_value:
 				handleGameServerLogin(pMsg);
 				break;
-			case Protocols.G2l_playerVerify.subCode_value:
-				if(checkServer(pMsg))
-					verifyGameToken(pMsg);
-			case Protocols.G2l_playerLogout.subCode_value:
-				handlePlayerLogout(pMsg);
-				break;
+			
 		}
 	}
 	
-	private void handlePlayerLogout(ProtocolMsg pMsg) {
-		
-	}
+	
 
 	private void handleGameServerLogin(ProtocolMsg pMsg){
 		int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
 		GameServer gs = map_server.get(serverId);
-		if(gs==null)
-			pMsg.getChannel().close();
+		System.out.println("remote="+pMsg.getChannel().remoteAddress());
 		String remoteAdd = pMsg.getChannel().remoteAddress().toString().substring(1);
 		remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
+		if(gs==null){
+			log.warn("未知游戏服请求登录  ip="+remoteAdd);
+			pMsg.getChannel().close();
+			return;
+		}
+		if(gs.isOnline()){
+			log.warn("重复的游戏服请求登录  ip="+remoteAdd);
+			pMsg.getChannel().close();
+			return;
+		}
 		if(!remoteAdd.equals("127.0.0.1") && !remoteAdd.equals(gs.getHost())){
 			pMsg.closeChannel();;
-			log.warn("非法IP地址请求,address="+remoteAdd);
+			log.warn("非法IP地址请求,ip="+remoteAdd);
 			return;
 		}
 		gs.setChannel(pMsg.getChannel());
@@ -118,21 +120,8 @@ public class GameServerService implements LogicHandler {
 		GameServerMsgSender.getInstance().addMsg(pMsg);
 	}
 
-	private void verifyGameToken(ProtocolMsg pMsg) {
-		String uuid=pMsg.getJson().getString(Protocols.G2l_playerVerify.UUID);
-		String gameToken=pMsg.getJson().getString(Protocols.G2l_playerVerify.GAMETOKEN);
-		Player player=PlayerLoginService.getInstance().checkGameToken(uuid, gameToken);
-		pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_playerVerify.subCode_value);
-		if(player!=null){
-			pMsg.getJson().put(Protocols.L2g_playerVerify.NAME, player.getName());
-			pMsg.getJson().put(Protocols.L2g_playerVerify.COIN, player.getCoin());
-		}else{
-			pMsg.getJson().put(Protocols.ERRORCODE, "验证失败");
-		}
-		GameServerMsgSender.getInstance().addMsg(pMsg);
-	}
-
-	private boolean checkServer(ProtocolMsg pMsg){
+	
+	public boolean checkServer(ProtocolMsg pMsg){
 		Attribute<GameServer> attr = pMsg.getChannel().attr(NETTY_CHANNEL_KEY);  
 		GameServer gs = attr.get(); 
 		if(gs!=null){
@@ -141,5 +130,16 @@ public class GameServerService implements LogicHandler {
 		pMsg.getChannel().close();
 		return false;
 	}
+
+	@Override
+	public int getMainCode() {
+		
+		return Protocols.MainCode.GAMESERVER_LOGIN;
+	}
 	
+	public GameServer getGameServer(ProtocolMsg msg){
+		Attribute<GameServer> attr = msg.getChannel().attr(NETTY_CHANNEL_KEY);  
+		GameServer gs = attr.get(); 
+		return gs;
+	}
 }

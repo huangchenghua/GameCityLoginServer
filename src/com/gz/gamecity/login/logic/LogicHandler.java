@@ -6,4 +6,5 @@ public interface LogicHandler {
 	
 	public void handleMsg(BaseMsg msg);
 	
+	public int getMainCode();
 }
