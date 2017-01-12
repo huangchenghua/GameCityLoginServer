@@ -49,7 +49,7 @@ public class LSMsgReceiver extends Thread {
 				{
 					log.warn("无法识别的协议:"+mainCode);
 				}
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
 				
 				e.printStackTrace();
 			}

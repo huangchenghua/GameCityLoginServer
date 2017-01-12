@@ -14,6 +14,7 @@
 	<classpathentry kind="lib" path="lib/httpcore-4.4.3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.0.5-bin.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/WebSocketFramework"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/GameCityBase"/>
 	<classpathentry kind="output" path="bin"/>

@@ -7,7 +7,7 @@ import com.gz.gamecity.bean.Player;
 
 import redis.clients.jedis.Jedis;
 
-public class PlayerDao extends BaseDao {
+public class PlayerDao extends JBaseDao {
 	private static final String player_data_prefix = "player";
 
 	public static Player getPlayer(String uuid) {

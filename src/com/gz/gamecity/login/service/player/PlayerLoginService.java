@@ -8,6 +8,7 @@ import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.PlayerManager;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.db.PlayerDao;
+import com.gz.gamecity.login.db.PlayerDataDao;
 import com.gz.gamecity.login.logic.LogicHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
@@ -23,6 +24,7 @@ public class PlayerLoginService implements LogicHandler {
 	
 	
 	private static PlayerLoginService instance;
+	private PlayerDataDao dao=new PlayerDataDao();
 	
 	public static synchronized PlayerLoginService getInstance() {
 		if(instance ==null)
@@ -44,8 +46,11 @@ public class PlayerLoginService implements LogicHandler {
 		case Protocols.C2l_login.subCode_value:
 			handlePlayerLogin(cMsg);
 			break;
-		case Protocols.Inner_login.subCode_value:
+		case Protocols.Inner_sdk_verify_suc.subCode_value:
 			handleLogin(cMsg);
+			break;
+		case Protocols.C2l_login_test.subCode_value:
+			handleLoginTest(cMsg);
 			break;
 		default:
 			break;
@@ -53,18 +58,33 @@ public class PlayerLoginService implements LogicHandler {
 	}
 
 
-	private void handlePlayerLogin(HttpMsg cMsg){
-		SdkVerify.getInstance().addMsg(cMsg);
+	private void handleLoginTest(HttpMsg hMsg) {
+		handleLogin(hMsg);
+	}
+
+	private void handlePlayerLogin(HttpMsg hMsg){
+		SdkVerify.getInstance().addMsg(hMsg);
 	}
 	
-	private void handleLogin(HttpMsg cMsg) {
-		String uuid = cMsg.getJson().getString(Protocols.Inner_login.UUID);
-		Player player = PlayerDao.getPlayer(uuid);
-		if(player == null){
-			player = handleRegist(uuid);
+	private void handleLogin(HttpMsg hMsg) {
+		String uuid = hMsg.getJson().getString(Protocols.Inner_sdk_verify_suc.UUID);
+		
+		GameServer gs = null;
+		//先从当前在线玩家的缓存中去查找
+		Player player = PlayerManager.getInstance().getOnlinePlayer(uuid);
+		if(player!=null){
+			//如果玩家是已经在线，就只发送当前进入的服务器列表
+			gs = GameServerService.getInstance().getGameServer(player.getServerId());
+		}else{
+			player = dao.getPlayer(uuid);
+			if(player == null){
+				player = handleRegist(uuid);
+			}
 		}
+		
+		
 		player.setGameToken(UUID.randomUUID().toString());
-		player.setChannel(cMsg.getChannel());
+//		player.setChannel(hMsg.getChannel());
 		PlayerManager.getInstance().playerLogin(player);
 //		PlayerLoginCache.getInstance().put(uuid, player, 1000*60*10);
 		
@@ -74,33 +94,44 @@ public class PlayerLoginService implements LogicHandler {
 		json.put(Protocols.SUBCODE, Protocols.L2c_login.subCode_value);
 		json.put(Protocols.L2c_login.GAMETOKEN, player.getGameToken());
 		Collection<GameServer> servers=GameServerService.getInstance().getMap_server().values();
-		JSONObject[] serverArray=new JSONObject[servers.size()];
-		int i=0;
-		for (GameServer server : servers) {
-			JSONObject j=new JSONObject();
-			j.put(Protocols.L2c_login.Serverlist.NAME, server.getName()); 
-			j.put(Protocols.L2c_login.Serverlist.ADDRESS, server.getHost());
-			j.put(Protocols.L2c_login.Serverlist.PORT, server.getClientPort());
-			j.put(Protocols.L2c_login.Serverlist.STATUS, server.getStatus());
-			serverArray[i]=j;
-			i++;
+		if(gs ==null){
+			JSONObject[] serverArray=new JSONObject[servers.size()];
+			int i=0;
+			for (GameServer server : servers) {
+				JSONObject j=new JSONObject();
+				j.put(Protocols.L2c_login.Serverlist.NAME, server.getName()); 
+				j.put(Protocols.L2c_login.Serverlist.ADDRESS, server.getGame_address());
+				j.put(Protocols.L2c_login.Serverlist.PORT, server.getClientPort());
+				j.put(Protocols.L2c_login.Serverlist.STATUS, server.getStatus());
+				serverArray[i]=j;
+				i++;
+			}
+			json.put(Protocols.L2c_login.SERVERLIST, serverArray);
+		}else{
+			JSONObject[] serverArray=new JSONObject[1];
+			serverArray[0]= new JSONObject();
+			serverArray[0].put(Protocols.L2c_login.Serverlist.NAME, gs.getName()); 
+			serverArray[0].put(Protocols.L2c_login.Serverlist.ADDRESS, gs.getGame_address());
+			serverArray[0].put(Protocols.L2c_login.Serverlist.PORT, gs.getClientPort());
+			serverArray[0].put(Protocols.L2c_login.Serverlist.STATUS, gs.getStatus());
+			json.put(Protocols.L2c_login.SERVERLIST, serverArray);
 		}
-		json.put(Protocols.L2c_login.SERVERLIST, serverArray);
-		cMsg.clear();
-		cMsg.setJson(json);
-		HttpDecoderAndEncoder.Response(cMsg.getCtx(), cMsg.getRequest(), json.toJSONString());
-		cMsg.getChannel().close();
+		
+		hMsg.clear();
+		hMsg.setJson(json);
+		HttpDecoderAndEncoder.Response(hMsg.getCtx(), hMsg.getRequest(), json.toJSONString());
+		hMsg.getChannel().close();
 	}
 
 	private Player handleRegist(String uuid) {
 		Player player = Player.createPlayer(uuid);
-		PlayerDao.insertPlayer(player);
+		dao.insertPlayer(player);
 		return player;
 	}
 	
 	public Player checkGameToken(String uuid,String gameToken){
 //		Player player=PlayerLoginCache.getInstance().getV(uuid);
-		Player player = PlayerManager.getInstance().getLoginPlayer(uuid);
+		Player player = PlayerManager.getInstance().getLoginPlayer(uuid+gameToken);
 		if(player!=null && player.getGameToken().equals(gameToken)){
 			return player;
 		}

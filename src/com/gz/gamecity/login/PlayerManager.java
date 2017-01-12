@@ -3,7 +3,11 @@ package com.gz.gamecity.login;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.gz.gamecity.bean.Player;
+import com.gz.gamecity.login.bean.GameServer;
+import com.gz.gamecity.login.service.gameserver.GameServerService;
+import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.DelayCache;
+import com.gz.websocket.msg.ProtocolMsg;
 
 public class PlayerManager {
 	
@@ -27,13 +31,21 @@ public class PlayerManager {
 		loginCache=new DelayCache<String, Player>();
 	}
 	
-	public void playerOnline(Player player){
+	public boolean playerOnline(Player player,GameServer gs){
 		Player p =onlinePlayers.get(player.getUuid());
-		if(p!=null){
-			// TODO 这里表示玩家已经在线，新上线的要踢掉之前的
+		//如果在线玩家队列中没有
+		if(p==null){
+			onlinePlayers.put(player.getUuid(), player);
+			return true;
+		}
+		else{ 
+			// 如果在在线玩家队列中就看登录的是否是同一个服务器,如果是同一个服务器就可以登录
+			if(p.getServerId() == gs.getServerId()){
+				return true;
+			}
 		}
 		
-		onlinePlayers.put(player.getUuid(), player);
+		return false;
 	}
 	
 	public Player getOnlinePlayer(String uuid){
@@ -46,11 +58,11 @@ public class PlayerManager {
 	}
 	
 	public void playerLogin(Player player){
-		loginCache.put(player.getUuid(), player, loginCacheTime);
+		loginCache.put(player.getUuid()+player.getGameToken(), player, loginCacheTime);
 	}
 	
-	public Player getLoginPlayer(String uuid){
-		return loginCache.getV(uuid);
+	public Player getLoginPlayer(String key){
+		return loginCache.getV(key);
 	}
 	
 	

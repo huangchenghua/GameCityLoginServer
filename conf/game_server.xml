@@ -2,12 +2,14 @@
 <servers>
 	<server name="游戏服1">
 		<serverId>1</serverId>
-		<host>192.168.1.83</host>
+		<host>127.0.0.1</host>
+		<game_address>192.168.1.83</game_address>
 		<port>18084</port>
 	</server>
-	<server name="游戏服2">
-		<serverId>2</serverId>
-		<host>127.0.0.1</host>
+	<server name="杨雪松">
+		<serverId>1</serverId>
+		<host>192.168.1.69</host>
+		<game_address>192.168.1.69</game_address>
 		<port>18084</port>
 	</server>
 </servers>

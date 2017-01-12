@@ -67,7 +67,7 @@ public class SdkVerify extends Thread{
 	}
 	
 	private void verifySuc(HttpMsg msg){
-		msg.getJson().put(Protocols.SUBCODE, Protocols.Inner_login.subCode_value);
+		msg.getJson().put(Protocols.SUBCODE, Protocols.Inner_sdk_verify_suc.subCode_value);
 		LSMsgReceiver.getInstance().addMsg(msg);
 	}
 	

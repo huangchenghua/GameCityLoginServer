@@ -1,18 +1,25 @@
 package com.gz.gamecity.login;
 
 
+import javax.naming.NameNotFoundException;
+
+import com.gz.dbpools.ConnectionFactory;
 import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
+import com.gz.gamecity.login.handler.impl.ChargeHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
 import com.gz.gamecity.login.handler.impl.PlayerLoginHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
+import com.gz.gamecity.login.service.db.DBService;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
+import com.gz.gamecity.login.service.player.PlayerDataService;
 import com.gz.gamecity.login.service.player.PlayerLoginService;
 import com.gz.gamecity.login.service.player.PlayerVerifyService;
 import com.gz.http.HttpServer;
 import com.gz.util.Config;
+import com.gz.util.SensitivewordFilter;
 import com.gz.websocket.protocol.server.ProtocolServer;
 import com.gz.websocket.server.WebSocketServer;
 
@@ -29,6 +36,7 @@ public class LoginServiceMain {
 	}
 	
 	public void loadConfig(){
+		SensitivewordFilter.getInstance();
 		Config.instance().init();
 	}
 	
@@ -39,12 +47,20 @@ public class LoginServiceMain {
 		LSMsgReceiver.getInstance().registHandler(PlayerLoginService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(GameServerService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(new PlayerVerifyService());
+		LSMsgReceiver.getInstance().registHandler(new PlayerDataService());
 		LSMsgReceiver.getInstance().start();
 	}
+	
 	public void initDB(){
 		JedisConnectionPool.init(Config.instance().getSValue(ConfigField.DB_HOST),
 				Config.instance().getIValue(ConfigField.DB_PORT),
 				Config.instance().getSValue(""));
+		try {
+			ConnectionFactory.lookup("login");
+		} catch (NameNotFoundException e) {
+			e.printStackTrace();
+		}
+		DBService.getInstance().start();
 	}
 	
 	public void initWebsocket(){
@@ -57,6 +73,7 @@ public class LoginServiceMain {
 		
 		final HttpServer httpServer = new HttpServer();
 		httpServer.addHandler(new PlayerLoginHandler());
+		httpServer.addHandler(new ChargeHandler());
 		Thread t = new Thread(){
 			@Override
 			public void run() {

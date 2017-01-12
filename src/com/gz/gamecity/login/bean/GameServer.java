@@ -4,13 +4,16 @@ import com.alibaba.fastjson.JSONObject;
 import com.gz.websocket.msg.ProtocolMsg;
 
 import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
 
 public class GameServer {
+	public static final AttributeKey<GameServer> NETTY_CHANNEL_KEY = AttributeKey.valueOf("gameServer");
 	public static final byte STATUS_OFFLINE =0;
 	public static final byte STATUS_ONLINE=1;
 	
 	private int serverId;
 	private String host;
+	private String game_address;
 	private String name;
 	private byte status = STATUS_OFFLINE;
 	private Channel channel;
@@ -53,6 +56,13 @@ public class GameServer {
 	}
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public String getGame_address() {
+		return game_address;
+	}
+	public void setGame_address(String game_address) {
+		this.game_address = game_address;
 	}
 	public void wirite(JSONObject json){
 		ProtocolMsg msg = new ProtocolMsg();

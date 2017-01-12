@@ -25,13 +25,13 @@ public class GameServerService implements LogicHandler {
 	
 	private static final Logger log=Logger.getLogger(GameServerService.class);
 	
-	private static final AttributeKey<GameServer> NETTY_CHANNEL_KEY = AttributeKey.valueOf("gameServer");
+//	private static final AttributeKey<GameServer> NETTY_CHANNEL_KEY = AttributeKey.valueOf("gameServer");
 	
 	private static GameServerService instance;
 	
-	private HashMap<Integer, GameServer> map_server=new HashMap<Integer, GameServer>();
+	private HashMap<String, GameServer> map_server=new HashMap<String, GameServer>();
 	
-	public HashMap<Integer, GameServer> getMap_server() {
+	public HashMap<String, GameServer> getMap_server() {
 		return map_server;
 	}
 
@@ -61,13 +61,15 @@ public class GameServerService implements LogicHandler {
 				System.out.println(name);
 				int serverId = Integer.parseInt(server.getChildText("serverId"));
 				String host = server.getChildText("host");
-				int port =Integer.parseInt(server.getChildText("port"));
+				String game_address = server.getChildText("game_address");
+				int port = Integer.parseInt(server.getChildText("port"));
 				GameServer gs = new GameServer();
 				gs.setHost(host);
+				gs.setGame_address(game_address);
 				gs.setName(name);
 				gs.setServerId(serverId);
 				gs.setClientPort(port);
-				map_server.put(serverId, gs);
+				map_server.put(host, gs);
 				list_server.add(gs);
 			}
 		} catch (Exception e) {
@@ -91,38 +93,44 @@ public class GameServerService implements LogicHandler {
 
 	private void handleGameServerLogin(ProtocolMsg pMsg){
 		int serverId = pMsg.getJson().getIntValue(Protocols.G2l_login.SERVERID);
-		GameServer gs = map_server.get(serverId);
 		System.out.println("remote="+pMsg.getChannel().remoteAddress());
 		String remoteAdd = pMsg.getChannel().remoteAddress().toString().substring(1);
 		remoteAdd = remoteAdd.substring(0, remoteAdd.indexOf(':'));
+		GameServer gs = map_server.get(remoteAdd);
 		if(gs==null){
 			log.warn("未知游戏服请求登录  ip="+remoteAdd);
 			pMsg.getChannel().close();
 			return;
 		}
-		if(gs.isOnline()){
-			log.warn("重复的游戏服请求登录  ip="+remoteAdd);
-			pMsg.getChannel().close();
-			return;
-		}
 		if(!remoteAdd.equals("127.0.0.1") && !remoteAdd.equals(gs.getHost())){
-			pMsg.closeChannel();;
+			pMsg.closeChannel();
 			log.warn("非法IP地址请求,ip="+remoteAdd);
 			return;
 		}
+		if(gs.isOnline()){
+			log.warn("重复的游戏服请求登录  ip="+remoteAdd);
+			Attribute<GameServer> attr = gs.getChannel().attr(GameServer.NETTY_CHANNEL_KEY);
+			attr.set(null);
+			gs.getChannel().close();
+//			gs.setChannel(pMsg.getChannel());
+//			Attribute<GameServer> _attr = gs.getChannel().attr(GameServer.NETTY_CHANNEL_KEY);
+//			_attr.set(gs);
+//			pMsg.getChannel().close();
+//			return;
+		}
 		gs.setChannel(pMsg.getChannel());
 		gs.setStatus(GameServer.STATUS_ONLINE);
-		Attribute<GameServer> att= pMsg.getChannel().attr(NETTY_CHANNEL_KEY);
+		Attribute<GameServer> att= pMsg.getChannel().attr(GameServer.NETTY_CHANNEL_KEY);
 		att.setIfAbsent(gs);
 		log.info("游戏服务器'"+gs.getName()+"'连接成功");
-		pMsg.getJson().put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
-		pMsg.getJson().put(Protocols.L2g_login.OPT, 1);
+		pMsg.put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
+		pMsg.put(Protocols.L2g_login.OPT, 1);
 		GameServerMsgSender.getInstance().addMsg(pMsg);
 	}
 
 	
 	public boolean checkServer(ProtocolMsg pMsg){
-		Attribute<GameServer> attr = pMsg.getChannel().attr(NETTY_CHANNEL_KEY);  
+		Attribute<GameServer> attr = pMsg.getChannel().attr(GameServer.NETTY_CHANNEL_KEY);  
 		GameServer gs = attr.get(); 
 		if(gs!=null){
 			return true;
@@ -138,8 +146,12 @@ public class GameServerService implements LogicHandler {
 	}
 	
 	public GameServer getGameServer(ProtocolMsg msg){
-		Attribute<GameServer> attr = msg.getChannel().attr(NETTY_CHANNEL_KEY);  
+		Attribute<GameServer> attr = msg.getChannel().attr(GameServer.NETTY_CHANNEL_KEY);  
 		GameServer gs = attr.get(); 
 		return gs;
+	}
+	
+	public GameServer getGameServer(int serverId){
+		return map_server.get(serverId);
 	}
 }

@@ -30,7 +30,7 @@ public class GameServerMsgSender extends Thread{
 	public void run() {
 		while(true){
 			try {
-				BaseMsg msg = queue.take();
+				ProtocolMsg msg = queue.take();
 				msg.sendSelf();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
