@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.PlayerManager;
 import com.gz.gamecity.login.bean.GameServer;
+import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.PlayerDao;
 import com.gz.gamecity.login.db.PlayerDataDao;
 import com.gz.gamecity.login.logic.LogicHandler;
@@ -14,6 +15,7 @@ import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.http.HttpDecoderAndEncoder;
+import com.gz.util.Config;
 import com.gz.websocket.msg.BaseMsg;
 import com.gz.websocket.msg.ClientMsg;
 import com.gz.websocket.msg.HttpMsg;
@@ -124,7 +126,7 @@ public class PlayerLoginService implements LogicHandler {
 	}
 
 	private Player handleRegist(String uuid) {
-		Player player = Player.createPlayer(uuid);
+		Player player = createPlayer(uuid);
 		dao.insertPlayer(player);
 		return player;
 	}
@@ -143,4 +145,20 @@ public class PlayerLoginService implements LogicHandler {
 		return Protocols.MainCode.PLAYER_LOGIN;
 	}
 	
+	
+	private Player createPlayer(String uuid) {
+		Player player = new Player();
+		player.setUuid(uuid);
+		player.setName("游客");
+		player.setSex((byte) 2);
+		player.setCoin(Config.instance().getLValue(ConfigField.PLAYER_INIT_COIN));
+		player.setHead(1);
+		player.setLvl(1);
+		player.setFinance(0);
+		player.setVip(0);
+		player.setCharm(0);
+		player.setSign("");
+		player.setCharge_total(0);
+		return player;
+	}
 }

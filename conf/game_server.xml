@@ -7,7 +7,7 @@
 		<port>18084</port>
 	</server>
 	<server name="杨雪松">
-		<serverId>1</serverId>
+		<serverId>2</serverId>
 		<host>192.168.1.69</host>
 		<game_address>192.168.1.69</game_address>
 		<port>18084</port>

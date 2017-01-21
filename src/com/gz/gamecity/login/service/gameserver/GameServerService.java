@@ -30,6 +30,7 @@ public class GameServerService implements LogicHandler {
 	private static GameServerService instance;
 	
 	private HashMap<String, GameServer> map_server=new HashMap<String, GameServer>();
+	private HashMap<Integer, GameServer> map_server_id=new HashMap<>();
 	
 	public HashMap<String, GameServer> getMap_server() {
 		return map_server;
@@ -70,6 +71,7 @@ public class GameServerService implements LogicHandler {
 				gs.setServerId(serverId);
 				gs.setClientPort(port);
 				map_server.put(host, gs);
+				map_server_id.put(gs.getServerId(), gs);
 				list_server.add(gs);
 			}
 		} catch (Exception e) {
@@ -126,6 +128,8 @@ public class GameServerService implements LogicHandler {
 		pMsg.put(Protocols.SUBCODE, Protocols.L2g_login.subCode_value);
 		pMsg.put(Protocols.L2g_login.OPT, 1);
 		GameServerMsgSender.getInstance().addMsg(pMsg);
+//		GameServer _gs=map_server_id.get(1);
+//		System.out.println(_gs);
 	}
 
 	
@@ -152,6 +156,6 @@ public class GameServerService implements LogicHandler {
 	}
 	
 	public GameServer getGameServer(int serverId){
-		return map_server.get(serverId);
+		return map_server_id.get(serverId);
 	}
 }

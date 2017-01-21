@@ -20,6 +20,12 @@ public class PlayerManager {
 	
 	private DelayCache<String, Player> loginCache;
 	
+	private ConcurrentHashMap<String,Player> onlineGm;
+	
+	public ConcurrentHashMap<String, Player> getOnlineGm() {
+		return onlineGm;
+	}
+	
 	public static synchronized PlayerManager getInstance() {
 		if(instance==null)
 			instance=new PlayerManager();
@@ -29,6 +35,7 @@ public class PlayerManager {
 	private PlayerManager(){
 		onlinePlayers=new ConcurrentHashMap<>();
 		loginCache=new DelayCache<String, Player>();
+		onlineGm = new ConcurrentHashMap<>();
 	}
 	
 	public boolean playerOnline(Player player,GameServer gs){
@@ -61,8 +68,13 @@ public class PlayerManager {
 		loginCache.put(player.getUuid()+player.getGameToken(), player, loginCacheTime);
 	}
 	
+	
 	public Player getLoginPlayer(String key){
 		return loginCache.getV(key);
+	}
+
+	public ConcurrentHashMap<String, Player> getOnlinePlayers() {
+		return onlinePlayers;
 	}
 	
 	

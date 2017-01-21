@@ -5,6 +5,7 @@ import javax.naming.NameNotFoundException;
 
 import com.gz.dbpools.ConnectionFactory;
 import com.gz.gamecity.bean.Player;
+import com.gz.gamecity.delay.InnerDelayManager;
 import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.db.JedisConnectionPool;
 import com.gz.gamecity.login.handler.impl.PlayerMsgHandler;
@@ -14,6 +15,7 @@ import com.gz.gamecity.login.handler.impl.PlayerLoginHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
 import com.gz.gamecity.login.service.db.DBService;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
+import com.gz.gamecity.login.service.gm.GmService;
 import com.gz.gamecity.login.service.player.PlayerDataService;
 import com.gz.gamecity.login.service.player.PlayerLoginService;
 import com.gz.gamecity.login.service.player.PlayerVerifyService;
@@ -43,11 +45,13 @@ public class LoginServiceMain {
 	public void startLogic()
 	{
 		PlayerManager.getInstance();
-		
+		InnerDelayManager.getInstance();
+		MaintainManager.getInstance().startMaintain();
 		LSMsgReceiver.getInstance().registHandler(PlayerLoginService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(GameServerService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(new PlayerVerifyService());
 		LSMsgReceiver.getInstance().registHandler(new PlayerDataService());
+		LSMsgReceiver.getInstance().registHandler(new GmService());
 		LSMsgReceiver.getInstance().start();
 	}
 	
@@ -68,6 +72,8 @@ public class LoginServiceMain {
 		GameServerMsgSender.getInstance().start();
 		
 		PlayerMsgSender.getInstance().start();
+		
+		GmMsgSender.getInstance().start();
 		
 		SdkVerify.getInstance().start();
 		

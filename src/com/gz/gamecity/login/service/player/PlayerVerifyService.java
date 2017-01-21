@@ -43,6 +43,11 @@ public class PlayerVerifyService implements LogicHandler {
 			GameServerMsgSender.getInstance().addMsg(pMsg);
 			return;
 		}
+		if(player.isFrozen()){
+			pMsg.put(Protocols.ERRORCODE, StringConst.str3);
+			GameServerMsgSender.getInstance().addMsg(pMsg);
+			return;
+		}
 		//判断是否已经在线
 		Player p = PlayerManager.getInstance().getOnlinePlayer(uuid);
 		if(p!=null){ //如果在线队列中已经存在
@@ -62,11 +67,20 @@ public class PlayerVerifyService implements LogicHandler {
 		pMsg.put(Protocols.L2g_playerVerify.COIN, player.getCoin());
 		pMsg.put(Protocols.L2g_playerVerify.HEAD, player.getHead());
 		pMsg.put(Protocols.L2g_playerVerify.LVL, player.getLvl());
+		pMsg.put(Protocols.L2g_playerVerify.EXP, player.getExp());
 		pMsg.put(Protocols.L2g_playerVerify.CHARGE_TOTAL, player.getCharge_total());
 		pMsg.put(Protocols.L2g_playerVerify.CHARM, player.getCharm());
 		pMsg.put(Protocols.L2g_playerVerify.FINANCE, player.getFinance());
 		pMsg.put(Protocols.L2g_playerVerify.SIGN, player.getSign());
 		pMsg.put(Protocols.L2g_playerVerify.VIP, player.getVip());
+		pMsg.put(Protocols.L2g_playerVerify.FROZEN, player.isFrozen());
+		pMsg.put(Protocols.L2g_playerVerify.SILENT, player.isSilent());
+		pMsg.put(Protocols.L2g_playerVerify.LASTSIGNDATE, player.getLastSignDate());
+		pMsg.put(Protocols.L2g_playerVerify.SIGNDAYS, player.getSignDays());
+		pMsg.put(Protocols.L2g_playerVerify.SIGNED, player.isSigned());
+		pMsg.put(Protocols.L2g_playerVerify.ALMS_CNT, player.getAlmsCnt());
+		pMsg.put(Protocols.L2g_playerVerify.ALMS_TIME, player.getAlmsTime());
+		pMsg.put(Protocols.L2g_playerVerify.HEADS, player.getHeads());
 		player.setServerId(gs.getServerId());
 		PlayerManager.getInstance().playerOnline(player, gs);
 		GameServerMsgSender.getInstance().addMsg(pMsg);

@@ -4,12 +4,15 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.gz.gamecity.bean.Mail;
 import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.protocol.Protocols;
+import com.gz.util.DateUtil;
 
 public class PlayerDataDao extends BaseDao{
 
@@ -36,6 +39,38 @@ public class PlayerDataDao extends BaseDao{
 				player.setCharm(rs.getInt("charm"));
 				player.setSign(rs.getString("sign"));
 				player.setCharge_total(rs.getLong("charge_total"));
+				player.setFrozen(rs.getInt("frozen")==1);
+				player.setSilent(rs.getInt("silent")==1);
+				player.setLastSignDate(rs.getString("last_sign_date"));
+				player.setSignDays(rs.getInt("sign_days"));
+				player.setExp(rs.getInt("exp"));
+				player.setAlmsCnt(rs.getByte("alms_cnt"));
+				player.setAlmsTime(rs.getString("alms_time"));
+				if(player.getLastSignDate()!=null){
+					if(player.getLastSignDate().equals(DateUtil.getCurDateTime("yyyy-MM-dd"))){
+						player.setSigned(true);
+					}
+				}
+				
+				String lastday = player.getLastSignDate();
+				long date_diff = 0;
+				if(lastday!=null){
+					try {
+						date_diff = DateUtil.dateDays(lastday,DateUtil.getCurDateTime("yyyy-MM-dd"));
+					} catch (Exception e) {
+					}
+				}
+				if(date_diff != 1){
+					player.setSignDays(0);
+				}
+				
+				String[] heads_str = rs.getString("heads").split("~");
+				int[] heads = new int[heads_str.length];
+				for (int i = 0; i < heads.length; i++) {
+					heads[i] = Integer.parseInt(heads_str[i]);
+				}
+				player.setHeads(heads);
+				
 				return player;
 			}
 		} catch (Exception e) {
@@ -130,7 +165,7 @@ public class PlayerDataDao extends BaseDao{
 		String vip_str = j.getString(Protocols.G2l_data_change.VIP);
 		if(vip_str!=null){
 			int vip = j.getIntValue(Protocols.G2l_data_change.VIP);
-			sb.append("head=").append(vip).append(",");
+			sb.append("vip=").append(vip).append(",");
 		}
 		
 		String charge_total_str = j.getString(Protocols.G2l_data_change.CHARGE_TOTAL);
@@ -151,13 +186,19 @@ public class PlayerDataDao extends BaseDao{
 			sb.append("lvl=").append(lvl).append(",");
 		}
 		
+		String exp_str = j.getString(Protocols.G2l_data_change.EXP);
+		if(exp_str!=null){
+			int exp = j.getIntValue(Protocols.G2l_data_change.EXP);
+			sb.append("exp=").append(exp).append(",");
+		}
+		
 		String finance_str = j.getString(Protocols.G2l_data_change.FINANCE);
 		if(finance_str!=null){
 			int finance = j.getIntValue(Protocols.G2l_data_change.FINANCE);
 			sb.append("finance=").append(finance).append(",");
 		}
 		
-		String sign = j.getString(Protocols.G2l_data_change.FINANCE);
+		String sign = j.getString(Protocols.G2l_data_change.SIGN);
 		if(sign!=null){
 			sb.append("sign='").append(sign).append("',");
 		}
@@ -166,6 +207,17 @@ public class PlayerDataDao extends BaseDao{
 		if(charm_str!=null){
 			int charm = j.getIntValue(Protocols.G2l_data_change.CHARM);
 			sb.append("charm=").append(charm).append(",");
+		}
+		
+		String heads_str = j.getString(Protocols.G2l_data_change.HEADS);
+		if(heads_str!=null){
+			JSONArray arr = j.getJSONArray(Protocols.G2l_data_change.HEADS);
+			sb.append("heads='");
+			for(int i=0;i<arr.size();i++){
+				sb.append(arr.getIntValue(i)).append("~");
+			}
+			sb.deleteCharAt(sb.length()-1);
+			sb.append("',");
 		}
 		
 		sb.deleteCharAt(sb.length()-1);
@@ -191,7 +243,7 @@ public class PlayerDataDao extends BaseDao{
 		JSONObject[] arr=null;
 		try {
 			conn = getConn();
-			pstmt = conn.prepareStatement("select * from mail where player_uuid=?");
+			pstmt = conn.prepareStatement("SELECT * FROM mail WHERE player_uuid=? ORDER BY `read`  ,send_time DESC");
 			pstmt.setString(1, uuid);
 			rs = pstmt.executeQuery();
 			while(rs.next()){
@@ -203,6 +255,16 @@ public class PlayerDataDao extends BaseDao{
 				j.put(Protocols.L2g_mail_list.Mail_list.READ, rs.getByte("read")==1);
 				j.put(Protocols.L2g_mail_list.Mail_list.TAKEN, rs.getByte("taken")==1);
 				j.put(Protocols.L2g_mail_list.Mail_list.ATTACHMENTS, rs.getString("attachments"));
+				j.put(Protocols.L2g_mail_list.Mail_list.MAIL_TYPE,rs.getInt("mail_type"));
+				j.put(Protocols.L2g_mail_list.Mail_list.SENDER,rs.getString("sender"));
+				Calendar c1 = DateUtil.parse(rs.getString("send_time"));
+				c1.add(Calendar.DATE, 31);
+				c1.set(Calendar.HOUR_OF_DAY, 0);
+				c1.set(Calendar.MINUTE, 1);
+				c1.set(Calendar.SECOND, 0);
+				Calendar c2 = Calendar.getInstance();
+				long remain = DateUtil.dateDiff("S", c2.getTime(), c1.getTime()); 
+				j.put(Protocols.L2g_mail_list.Mail_list.REMAIN, remain);
 				list.add(j);
 			}
 			
@@ -223,13 +285,15 @@ public class PlayerDataDao extends BaseDao{
 		PreparedStatement pstmt = null;
 		try {
 			conn = getConn();
-			pstmt = conn.prepareStatement("insert into mail(mail_uuid,player_uuid,title,content,send_time,attachments) values(?,?,?,?,?,?)");
+			pstmt = conn.prepareStatement("insert into mail(mail_uuid,player_uuid,title,content,send_time,attachments,mail_type,sender) values(?,?,?,?,?,?,?,?)");
 			pstmt.setString(1, j.getString(Protocols.DB_login_new_mail.MAILID));
 			pstmt.setString(2, j.getString(Protocols.DB_login_new_mail.UUID));
 			pstmt.setString(3, j.getString(Protocols.DB_login_new_mail.TITLE));
 			pstmt.setString(4, j.getString(Protocols.DB_login_new_mail.CONTENT));
 			pstmt.setString(5, j.getString(Protocols.DB_login_new_mail.SEND_TIME));
 			pstmt.setString(6, j.getString(Protocols.DB_login_new_mail.ATTACHMENTS));
+			pstmt.setInt(7, j.getIntValue(Protocols.DB_login_new_mail.MAIL_TYPE));
+			pstmt.setString(8, j.getString(Protocols.DB_login_new_mail.SENDER));
 			pstmt.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -243,7 +307,7 @@ public class PlayerDataDao extends BaseDao{
 		PreparedStatement pstmt = null;
 		try {
 			conn = getConn();
-			pstmt = conn.prepareStatement("update mail set read = 1 where mail_uuid = ?");
+			pstmt = conn.prepareStatement("update mail set `read` = 1 where mail_uuid = ?");
 			pstmt.setString(1, mailId);
 			pstmt.executeUpdate();
 		} catch (Exception e) {
@@ -265,13 +329,15 @@ public class PlayerDataDao extends BaseDao{
 			rs= pstmt.executeQuery();
 			if(rs.next()){
 				mail =new Mail();
-				mail.setAttachments(rs.getString(""));
-				mail.setContent(rs.getString(""));
-				mail.setMailId(rs.getString(""));;
-				mail.setPlayer_uuid(rs.getString(""));
-				mail.setRead(rs.getInt("")==1);
-				mail.setTaken(rs.getInt("")==1);
-				mail.setTitle(rs.getString(""));
+				mail.setAttachments(rs.getString("attachments"));
+				mail.setContent(rs.getString("content"));
+				mail.setMailId(rs.getString("mail_uuid"));;
+				mail.setPlayer_uuid(rs.getString("player_uuid"));
+				mail.setRead(rs.getInt("read")==1);
+				mail.setTaken(rs.getInt("taken")==1);
+				mail.setTitle(rs.getString("title"));
+				mail.setMail_type(rs.getInt("mail_type"));
+				mail.setSender(rs.getString("sender"));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -281,13 +347,13 @@ public class PlayerDataDao extends BaseDao{
 		return mail;
 	}
 	
-	public void delMail(String ids){
+	public void takeMail(String mailId){
 		Connection conn=null;
 		PreparedStatement pstmt = null;
 		try {
 			conn = getConn();
-			pstmt = conn.prepareStatement("delete from mail where mail_uuid in ?");
-			pstmt.setString(1, ids);
+			pstmt = conn.prepareStatement("update mail set `taken` = 1 where mail_uuid = ?");
+			pstmt.setString(1, mailId);
 			pstmt.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -296,8 +362,29 @@ public class PlayerDataDao extends BaseDao{
 		}
 	}
 	
-	public int[][] getPlayerGiftList(String uuid){
-		int[][] info=null;
+	public void delMail(String ids){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn = getConn();
+			StringBuffer sb =new StringBuffer("delete from mail where mail_uuid in (");
+			String[] par=ids.split(",");
+			for(int i=0;i<par.length;i++){
+				sb.append("'").append(par[i]).append("',");
+			}
+			sb.deleteCharAt(sb.length()-1);
+			sb.append(")");
+			pstmt = conn.prepareStatement(sb.toString());
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public int[] getPlayerGiftList(String uuid){
+		int[] info=null;
 		Connection conn=null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -307,10 +394,9 @@ public class PlayerDataDao extends BaseDao{
 			pstmt.setString(1, uuid);
 			rs = pstmt.executeQuery();
 			if(rs.next()){
-				info=new int[2][8];
+				info=new int[8];
 				for(int i=0;i<8;i++){
-					info[0][i] = rs.getInt("id_"+(i+1));
-					info[1][i] = rs.getInt("count_"+(i+1));
+					info[i] = rs.getInt("count_"+(i+1));
 				}
 			}
 		} catch (Exception e) {
@@ -335,4 +421,287 @@ public class PlayerDataDao extends BaseDao{
 			close(null, pstmt, conn);
 		}
 	}
+
+	
+	// friend
+	public int insertFriend(JSONObject j ) {
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		int nCnt = 0;
+		try {
+			conn = getConn();
+			pstmt = conn.prepareStatement("insert into friend(uuid, uuid_friend, create_time) values(?,?,?)");
+			pstmt.setString(1, j.getString(Protocols.G2l_friend_add.UUID_MY));
+			pstmt.setString(2, j.getString(Protocols.G2l_friend_add.UUID_OTHER));
+			pstmt.setString(3, j.getString(Protocols.G2l_friend_add.DATE_TIME));
+
+			nCnt = pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+		return nCnt;
+	}
+	
+	public int deleteFriend(String strUuid, String strUuidOther) {
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		int nCnt = 0;
+		try {
+			conn = getConn();
+			pstmt = conn.prepareStatement("delete from friend where uuid=? and uuid_friend=? limit 1");
+			pstmt.setString(1, strUuid);
+			pstmt.setString(2, strUuidOther);
+			
+			nCnt = pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+		return nCnt;
+	}
+
+	public JSONObject[] getFriendList(String strUuid) {
+		/*select uuid,name,coin,head from player where uuid in (select uuid_friend from friend where uuid=1);
+		<field name="uuid" type="string"/>
+		<field name="lv" type="int"/>
+		<field name="name" type="string"/>
+		<field name="head" type="int"/>
+		<field name="vip" type="int"/>
+		<field name="finance" type="int"/>
+		<field name="coin" type="long"/>
+		*/
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<JSONObject> list = new ArrayList<>();
+		JSONObject[] szObj = null;
+		try {
+			conn = getConn();
+			pstmt = conn.prepareStatement("select uuid, lvl, name, head, vip, finance, coin from player where uuid in (select uuid_friend from friend where uuid=?)");
+			pstmt.setString(1, strUuid);
+			rs = pstmt.executeQuery();
+			while(rs.next()){
+				JSONObject j = new JSONObject();
+				j.put(Protocols.L2g_friend_list.Player_list.UUID, rs.getString("uuid"));
+				j.put(Protocols.L2g_friend_list.Player_list.LV, rs.getInt("lvl"));
+				j.put(Protocols.L2g_friend_list.Player_list.NAME, rs.getString("name"));
+				j.put(Protocols.L2g_friend_list.Player_list.HEAD, rs.getInt("head"));
+				j.put(Protocols.L2g_friend_list.Player_list.VIP, rs.getInt("vip"));
+				j.put(Protocols.L2g_friend_list.Player_list.FINANCE, rs.getInt("finance"));
+				j.put(Protocols.L2g_friend_list.Player_list.COIN, rs.getLong("coin"));
+				
+				list.add(j);
+			}
+			
+			szObj = new JSONObject[list.size()];
+			for(int i = 0; i < szObj.length; ++i){
+				szObj[i] = list.get(i);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(rs, pstmt, conn);
+		}
+		return szObj;
+	}
+
+	public List<Player> searchPlayer(String name){
+		List<Player> list=new ArrayList<>();
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("select * from player where name like '%"+name+"%'");
+			rs=pstmt.executeQuery();
+			while(rs.next()){
+				Player player = new  Player();
+				player.setUuid(rs.getString("uuid"));
+				player.setName(rs.getString("name"));
+				player.setSex(rs.getByte("sex"));
+				player.setCoin(rs.getLong("coin"));
+				player.setHead(rs.getInt("head"));
+				player.setLvl(rs.getInt("lvl"));
+				player.setFinance(rs.getInt("finance"));
+				player.setVip(rs.getInt("vip"));
+				player.setCharm(rs.getInt("charm"));
+				player.setSign(rs.getString("sign"));
+				player.setCharge_total(rs.getLong("charge_total"));
+				player.setFrozen(rs.getInt("frozen")==1);
+				player.setSilent(rs.getInt("silent")==1);
+				list.add(player);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(rs, pstmt, conn);
+		}
+		return list;
+	}
+	
+	public void freezePlayer(String uuid){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set frozen = 1 where uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void unfreezePlayer(String uuid){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set frozen = 0 where uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void silentPlayer(String uuid){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set silent = 1 where uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void unsilentPlayer(String uuid){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set silent = 0 where uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void cleanMail(String datetime){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("delete from mail where send_time between '2010-01-01' and '"+datetime+"'");
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void playerSignin(String uuid,String date,int days){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set last_sign_date = ?,sign_days=? where uuid=?");
+			pstmt.setString(1, date);
+			pstmt.setInt(2, days);
+			pstmt.setString(3, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+
+	public void recordCharge(JSONObject j){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("insert into charge values(?,?,?,?,?,?,?,?,now())");
+			pstmt.setString(1, j.getString(Protocols.DB_charge_record.UUID));
+			pstmt.setInt(2, j.getIntValue(Protocols.DB_charge_record.AMOUNT));
+			pstmt.setString(3, j.getString(Protocols.DB_charge_record.APPID));
+			pstmt.setString(4, j.getString(Protocols.DB_charge_record.NOTIFYPARAMETERS));
+			pstmt.setString(5, j.getString(Protocols.DB_charge_record.ORDERID));
+			pstmt.setString(6, j.getString(Protocols.DB_charge_record.PAYWAY));
+			pstmt.setString(7, j.getString(Protocols.DB_charge_record.STATUS));
+			pstmt.setString(8, j.getString(Protocols.DB_charge_record.SIGN));
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public JSONArray getChargeRecordList(String uuid){
+		JSONArray arr = new JSONArray();
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn = getConn();
+			pstmt=conn.prepareStatement("select * from charge where uuid=?");
+			pstmt.setString(1, uuid);
+			rs = pstmt.executeQuery();
+			while(rs.next()){
+				JSONObject j = new JSONObject();
+				j.put(Protocols.L2gm_req_charge.List.AMOUNT, rs.getInt("amount"));
+				j.put(Protocols.L2gm_req_charge.List.CHARGE_TIME, rs.getString("charge_time"));
+				j.put(Protocols.L2gm_req_charge.List.ORDERID, rs.getString("order_id"));
+				j.put(Protocols.L2gm_req_charge.List.PAYWAY, rs.getString("pay_way"));
+				j.put(Protocols.L2gm_req_charge.List.STATUS, rs.getString("status"));
+				arr.add(j);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(rs, pstmt, conn);
+		}
+		
+		return arr;
+	}
+	
+	public void updatePlayerGift(JSONObject j){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn = getConn();
+			String uuid = j.getString(Protocols.DB_player_gift_change.UUID);
+			int id = j.getIntValue(Protocols.DB_player_gift_change.ID);
+			int count = j.getIntValue(Protocols.DB_player_gift_change.COUNT);
+			String col_name = "count_"+id;
+			pstmt = conn.prepareStatement("update player_gift set "+col_name+" = "+col_name + "+"+count+" where player_uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+		
+	}
+	
 }

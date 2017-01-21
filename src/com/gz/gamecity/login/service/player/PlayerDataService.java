@@ -1,7 +1,6 @@
 package com.gz.gamecity.login.service.player;
 
 import com.alibaba.fastjson.JSONObject;
-import com.gz.gamecity.bean.Mail;
 import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.PlayerManager;
 import com.gz.gamecity.login.bean.GameServer;
@@ -46,9 +45,85 @@ public class PlayerDataService implements LogicHandler {
 		case Protocols.G2l_player_gift_list.subCode_value:
 			handlePlayerGiftList(pMsg);
 			break;
+		case Protocols.G2l_friend_add.subCode_value:
+			handleFriendAdd(pMsg);
+			break;
+		case Protocols.G2l_friend_del.subCode_value:
+			handleFriendDel(pMsg);
+			break;
+			
+		case Protocols.G2l_friend_list.subCode_value :
+			handleFriendList(pMsg);
+			break;
+		case Protocols.G2l_friend_other_info.subCode_value:
+			handleFriendOtherInfo(pMsg);
+			break;
+		case Protocols.G2l_player_signin.subCode_value:
+			handleHandleSignin(pMsg);
+			break;
+		case Protocols.G2l_player_gift_change.subCode_value:
+			handlePlayerGiftChange(pMsg);
+			break;
 		}
 	}
+	private void handlePlayerGiftChange(ProtocolMsg pMsg) {
+		pMsg.put(Protocols.MAINCODE, Protocols.DB_player_gift_change.mainCode_value);
+		pMsg.put(Protocols.SUBCODE, Protocols.DB_player_gift_change.subCode_value);
+		DBService.getInstance().addMsg(pMsg.getJson());
+	}
+	private void handleHandleSignin(ProtocolMsg pMsg) {
+		pMsg.put(Protocols.MAINCODE, Protocols.DB_player_signin.mainCode_value);
+		pMsg.put(Protocols.SUBCODE, Protocols.DB_player_signin.subCode_value);
+		DBService.getInstance().addMsg(pMsg.getJson());
+	}
 
+	private void handleFriendOtherInfo(ProtocolMsg msg) {
+		msg.put(Protocols.MAINCODE, Protocols.DB_friend_other_info.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.DB_friend_other_info.subCode_value);
+		
+		GameServer gs = GameServerService.getInstance().getGameServer(msg);
+		if (gs == null) 
+			return;
+		msg.put(Protocols.G2l_friend_list.SERVER_ID, gs.getServerId());
+		DBService.getInstance().addMsg(msg.getJson());
+	}
+	
+	private void handleFriendList(ProtocolMsg msg) {
+		msg.put(Protocols.MAINCODE, Protocols.DB_friend_list.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.DB_friend_list.subCode_value);
+		
+		GameServer gs = GameServerService.getInstance().getGameServer(msg);
+		if (gs == null) 
+			return;
+		msg.put(Protocols.G2l_friend_list.SERVER_ID, gs.getServerId());
+		DBService.getInstance().addMsg(msg.getJson());
+	}
+	
+	
+	private void handleFriendDel(ProtocolMsg msg) {
+		msg.put(Protocols.MAINCODE, Protocols.DB_friend_del.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.DB_friend_del.subCode_value);
+		
+		GameServer gs = GameServerService.getInstance().getGameServer(msg);
+		if (gs == null) 
+			return;
+		msg.put(Protocols.G2l_friend_del.SERVER_ID, gs.getServerId());
+		DBService.getInstance().addMsg(msg.getJson());
+	}
+	
+	private void handleFriendAdd(ProtocolMsg msg) {		
+		msg.put(Protocols.MAINCODE, Protocols.DB_friend_add.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.DB_friend_add.subCode_value);
+		
+		
+		GameServer gs = GameServerService.getInstance().getGameServer(msg);
+		if (gs != null) {
+			msg.put(Protocols.G2l_friend_add.SERVER_ID, gs.getServerId());
+			DBService.getInstance().addMsg(msg.getJson());
+		}
+
+	}
+	
 	private void handlePlayerGiftList(ProtocolMsg pMsg) {
 		GameServer gs = GameServerService.getInstance().getGameServer(pMsg);
 		pMsg.put(Protocols.MAINCODE, Protocols.DB_player_gift_list.mainCode_value);
@@ -66,7 +141,12 @@ public class PlayerDataService implements LogicHandler {
 	private void handleTakeMail(ProtocolMsg pMsg) {
 		pMsg.put(Protocols.MAINCODE, Protocols.DB_login_take_mail.mainCode_value);
 		pMsg.put(Protocols.SUBCODE, Protocols.DB_login_take_mail.subCode_value);
-		DBService.getInstance().addMsg(pMsg.getJson());
+		GameServer gs = GameServerService.getInstance().getGameServer(pMsg);
+		if(gs!=null){
+			pMsg.put(Protocols.DB_login_take_mail.SERVERID, gs.getServerId());
+			DBService.getInstance().addMsg(pMsg.getJson());
+		}
+		
 	}
 
 	private void handleOpenMail(ProtocolMsg pMsg) {
@@ -125,12 +205,10 @@ public class PlayerDataService implements LogicHandler {
 		String uuid = pMsg.getJson().getString(Protocols.G2l_coinChange.UUID);
 //		JSONObject data = pMsg.getJson().getJSONObject(Protocols.G2l_data_change.DATA);
 		Player player = PlayerManager.getInstance().getOnlinePlayer(uuid);
-		StringBuffer sb=new StringBuffer("");
 		String name = pMsg.getJson().getString(Protocols.G2l_data_change.NAME);
 		if(name!=null){
 			if(player!=null)
 				player.setName(name);
-			sb.append("name='").append(name).append("',");
 		}
 		
 		String head_str = pMsg.getJson().getString(Protocols.G2l_data_change.HEAD);
@@ -138,7 +216,6 @@ public class PlayerDataService implements LogicHandler {
 			int head = pMsg.getJson().getIntValue(Protocols.G2l_data_change.HEAD);
 			if(player!=null)
 				player.setHead(head);
-			sb.append("head='").append(head).append("',");
 		}
 		
 		String vip_str = pMsg.getJson().getString(Protocols.G2l_data_change.VIP);
@@ -146,7 +223,6 @@ public class PlayerDataService implements LogicHandler {
 			int vip = pMsg.getJson().getIntValue(Protocols.G2l_data_change.VIP);
 			if(player!=null)
 				player.setVip(vip);
-			sb.append("head=").append(vip).append(",");
 		}
 		
 		String charge_total_str = pMsg.getJson().getString(Protocols.G2l_data_change.CHARGE_TOTAL);
@@ -154,7 +230,6 @@ public class PlayerDataService implements LogicHandler {
 			long charge_total = pMsg.getJson().getLongValue(Protocols.G2l_data_change.CHARGE_TOTAL);
 			if(player!=null)
 				player.setCharge_total(charge_total);
-			sb.append("charge_total=").append(charge_total).append(",");
 		}
 		
 		String sex_str = pMsg.getJson().getString(Protocols.G2l_data_change.SEX);
@@ -162,7 +237,6 @@ public class PlayerDataService implements LogicHandler {
 			byte sex = pMsg.getJson().getByteValue(Protocols.G2l_data_change.SEX);
 			if(player!=null)
 				player.setSex(sex);
-			sb.append("sex=").append(sex).append(",");
 		}
 		
 		String lvl_str = pMsg.getJson().getString(Protocols.G2l_data_change.LVL);
@@ -170,7 +244,13 @@ public class PlayerDataService implements LogicHandler {
 			int lvl = pMsg.getJson().getIntValue(Protocols.G2l_data_change.LVL);
 			if(player!=null)
 				player.setLvl(lvl);
-			sb.append("lvl=").append(lvl).append(",");
+		}
+		
+		String exp_str = pMsg.getJson().getString(Protocols.G2l_data_change.EXP);
+		if(exp_str!=null){
+			int exp = pMsg.getJson().getIntValue(Protocols.G2l_data_change.EXP);
+			if(player!=null)
+				player.setExp(exp);
 		}
 		
 		String finance_str = pMsg.getJson().getString(Protocols.G2l_data_change.FINANCE);
@@ -178,14 +258,12 @@ public class PlayerDataService implements LogicHandler {
 			int finance = pMsg.getJson().getIntValue(Protocols.G2l_data_change.FINANCE);
 			if(player!=null)
 				player.setFinance(finance);
-			sb.append("finance=").append(finance).append(",");
 		}
 		
-		String sign = pMsg.getJson().getString(Protocols.G2l_data_change.FINANCE);
+		String sign = pMsg.getJson().getString(Protocols.G2l_data_change.SIGN);
 		if(sign!=null){
 			if(player!=null)
 				player.setSign(sign);
-			sb.append("sign='").append(sign).append("',");
 		}
 		
 		String charm_str = pMsg.getJson().getString(Protocols.G2l_data_change.CHARM);
@@ -193,8 +271,9 @@ public class PlayerDataService implements LogicHandler {
 			int charm = pMsg.getJson().getIntValue(Protocols.G2l_data_change.CHARM);
 			if(player!=null)
 				player.setCharm(charm);
-			sb.append("charm=").append(charm).append(",");
 		}
+		
+		
 		JSONObject j = pMsg.getJson();
 		j.put(Protocols.MAINCODE, Protocols.DB_data_change.mainCode_value);
 		j.put(Protocols.SUBCODE, Protocols.DB_data_change.subCode_value);
