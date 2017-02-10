@@ -1,6 +1,7 @@
 package com.gz.gamecity.login.service.player;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.UUID;
 
 import com.alibaba.fastjson.JSONObject;
@@ -23,7 +24,7 @@ import com.gz.websocket.msg.HttpMsg;
 
 public class PlayerLoginService implements LogicHandler {
 	
-	
+	private static final String str_random="abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ123456789";
 	
 	private static PlayerLoginService instance;
 	private PlayerDataDao dao=new PlayerDataDao();
@@ -149,7 +150,7 @@ public class PlayerLoginService implements LogicHandler {
 	private Player createPlayer(String uuid) {
 		Player player = new Player();
 		player.setUuid(uuid);
-		player.setName("游客");
+		player.setName(getRandomName());
 		player.setSex((byte) 2);
 		player.setCoin(Config.instance().getLValue(ConfigField.PLAYER_INIT_COIN));
 		player.setHead(1);
@@ -159,6 +160,20 @@ public class PlayerLoginService implements LogicHandler {
 		player.setCharm(0);
 		player.setSign("");
 		player.setCharge_total(0);
+		player.setHeads(new int[]{1,2,3,4,5,6,7,8});
 		return player;
 	}
+	
+	private static final String getRandomName(){
+		StringBuffer sb = new StringBuffer("用户");
+		Random r=new Random();
+		for(int i=0;i<8;i++){
+			int index = r.nextInt(str_random.length());
+			sb.append(str_random.charAt(index));
+		}
+//		System.out.println(sb.toString());
+		
+		return sb.toString();
+	}
+	
 }

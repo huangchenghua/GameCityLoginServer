@@ -31,6 +31,7 @@ public class LSMsgReceiver extends Thread {
 	public void addMsg(BaseMsg msg){
 		try {
 			queue.put(msg);
+			//log.debug("add msg[mainCoide=" + msg.getMainCode() + "]");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -45,9 +46,9 @@ public class LSMsgReceiver extends Thread {
 				LogicHandler handler =handlers.get(mainCode);
 				if(handler!=null)
 					handler.handleMsg(msg);
-				else
-				{
+				else {
 					log.warn("无法识别的协议:"+mainCode);
+					log.debug("unknow main_code [mainCode=" + mainCode + "]");
 				}
 			} catch (Exception e) {
 				

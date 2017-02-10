@@ -13,12 +13,15 @@ import com.gz.gamecity.login.handler.impl.ChargeHandler;
 import com.gz.gamecity.login.handler.impl.GameServerMsgHandler;
 import com.gz.gamecity.login.handler.impl.PlayerLoginHandler;
 import com.gz.gamecity.login.sdkverify.SdkVerify;
+import com.gz.gamecity.login.service.charts.ChartsService;
 import com.gz.gamecity.login.service.db.DBService;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
+import com.gz.gamecity.login.service.gm.GameNoticeManager;
 import com.gz.gamecity.login.service.gm.GmService;
 import com.gz.gamecity.login.service.player.PlayerDataService;
 import com.gz.gamecity.login.service.player.PlayerLoginService;
 import com.gz.gamecity.login.service.player.PlayerVerifyService;
+import com.gz.gamecity.login.service.charts.ChartsService;
 import com.gz.http.HttpServer;
 import com.gz.util.Config;
 import com.gz.util.SensitivewordFilter;
@@ -47,11 +50,15 @@ public class LoginServiceMain {
 		PlayerManager.getInstance();
 		InnerDelayManager.getInstance();
 		MaintainManager.getInstance().startMaintain();
+		GameNoticeManager.getInstance();
 		LSMsgReceiver.getInstance().registHandler(PlayerLoginService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(GameServerService.getInstance());
 		LSMsgReceiver.getInstance().registHandler(new PlayerVerifyService());
 		LSMsgReceiver.getInstance().registHandler(new PlayerDataService());
 		LSMsgReceiver.getInstance().registHandler(new GmService());
+		
+		LSMsgReceiver.getInstance().registHandler(ChartsService.getInstance());
+		
 		LSMsgReceiver.getInstance().start();
 	}
 	

@@ -5,6 +5,7 @@ import com.gz.gamecity.bean.Player;
 import com.gz.gamecity.login.PlayerManager;
 import com.gz.gamecity.login.bean.GameServer;
 import com.gz.gamecity.login.logic.LogicHandler;
+import com.gz.gamecity.login.service.charts.ChartsService;
 import com.gz.gamecity.login.service.db.DBService;
 import com.gz.gamecity.login.service.gameserver.GameServerService;
 import com.gz.gamecity.protocol.Protocols;
@@ -199,6 +200,9 @@ public class PlayerDataService implements LogicHandler {
 		j.put(Protocols.DB_login_coin_change.CHANGE, change);
 		j.put(Protocols.DB_login_coin_change.TYPE, type);
 		DBService.getInstance().addMsg(j);
+		
+		// update charts record
+		ChartsService.getInstance().addCoinDay(uuid, change);
 	}
 
 	private void handlePlayerDataChange(ProtocolMsg pMsg) {
@@ -273,6 +277,20 @@ public class PlayerDataService implements LogicHandler {
 				player.setCharm(charm);
 		}
 		
+		if (pMsg.getJson().containsKey(Protocols.G2l_data_change.ALMS_CNT)) {
+			if (player != null) {
+				byte nAlmsCnt = pMsg.getJson().getByteValue(Protocols.G2l_data_change.ALMS_CNT);
+				player.setAlmsCnt(nAlmsCnt);
+			}
+				
+		}
+		
+		if (pMsg.getJson().containsKey(Protocols.G2l_data_change.ALMS_TIME)) {
+			if (player != null) {
+				String strAlmsTime = pMsg.getJson().getString(Protocols.G2l_data_change.ALMS_TIME);
+				player.setAlmsTime(strAlmsTime);
+			}
+		}
 		
 		JSONObject j = pMsg.getJson();
 		j.put(Protocols.MAINCODE, Protocols.DB_data_change.mainCode_value);

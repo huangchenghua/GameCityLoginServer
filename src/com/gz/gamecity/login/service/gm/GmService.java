@@ -56,10 +56,58 @@ public class GmService implements LogicHandler {
 		case Protocols.Gm2l_unsilent.subCode_value:
 			handleUnsilent(msg);
 			break;
+		case Protocols.Gm2l_search_frozen_player.subCode_value:
+			handleSearchFrozenPlayer(msg);
+			break;
+		case Protocols.Gm2l_search_silent_player.subCode_value:
+			handleSearchSilentPlayer(msg);
+			break;
+		case Protocols.Gm2l_send_game_notice.subCode_value:
+			handleSendGameNotice(msg);
+			break;
+		case Protocols.Gm2l_game_notice_list.subCode_value:
+			handleNoticeList(msg);
+			break;
+		case Protocols.Gm2l_del_game_notice.subCode_value:
+			handleDelNotice(msg);
+			break;
 		default:
 			break;
 		}
 
+	}
+
+	private void handleDelNotice(ClientMsg msg) {
+		GameNoticeManager.getInstance().delNotice(msg);
+	}
+
+	private void handleNoticeList(ClientMsg msg) {
+		GameNoticeManager.getInstance().getNoticeList(msg);
+		
+	}
+
+	private void handleSendGameNotice(ClientMsg msg) {
+		GameNoticeManager.getInstance().addGameNotice(msg);
+	}
+
+	private void handleSearchSilentPlayer(ClientMsg msg) {
+		Player gm = getGmFromMsg(msg);
+		if(gm!=null){
+			msg.put(Protocols.MAINCODE, Protocols.DB_search_silent_player.mainCode_value);
+			msg.put(Protocols.SUBCODE, Protocols.DB_search_silent_player.subCode_value);
+			msg.put(Protocols.DB_search_silent_player.GM_UUID, gm.getUuid());
+			DBService.getInstance().addMsg(msg.getJson());
+		}
+	}
+
+	private void handleSearchFrozenPlayer(ClientMsg msg) {
+		Player gm = getGmFromMsg(msg);
+		if(gm!=null){
+			msg.put(Protocols.MAINCODE, Protocols.DB_search_frozen_player.mainCode_value);
+			msg.put(Protocols.SUBCODE, Protocols.DB_search_frozen_player.subCode_value);
+			msg.put(Protocols.DB_search_frozen_player.GM_UUID, gm.getUuid());
+			DBService.getInstance().addMsg(msg.getJson());
+		}
 	}
 
 	private void handleUnsilent(ClientMsg msg) {

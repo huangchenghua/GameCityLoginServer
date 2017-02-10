@@ -5,11 +5,19 @@ import org.apache.commons.codec.Charsets;
 import org.apache.log4j.Logger;
 
 import com.alibaba.fastjson.JSONObject;
+import com.gz.gamecity.bean.Player;
+import com.gz.gamecity.login.GameServerMsgSender;
+import com.gz.gamecity.login.PlayerManager;
+import com.gz.gamecity.login.bean.GameServer;
+import com.gz.gamecity.login.config.ConfigField;
 import com.gz.gamecity.login.service.db.DBService;
+import com.gz.gamecity.login.service.gameserver.GameServerService;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.http.HttpDecoderAndEncoder;
 import com.gz.http.HttpServerMsgHandler;
+import com.gz.util.Config;
 import com.gz.util.MD5Util;
+import com.gz.websocket.msg.ProtocolMsg;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -51,6 +59,27 @@ public class ChargeHandler implements HttpServerMsgHandler {
 		j.put(Protocols.MAINCODE, Protocols.DB_charge_record.mainCode_value);
 		j.put(Protocols.SUBCODE, Protocols.DB_charge_record.subCode_value);
 		DBService.getInstance().addMsg(j);
+		// TODO 执行业务逻辑操作
+		long coin = amount/100*Config.instance().getIValue(ConfigField.CHARGE_RATE);//amount单位是分，转换成元，然后再乘配置的比率
+		Player player = PlayerManager.getInstance().getOnlinePlayer(uuid);
+		if(player!=null){
+			GameServer gs = GameServerService.getInstance().getGameServer(player.getServerId());
+			ProtocolMsg pMsg = new ProtocolMsg();
+			pMsg.put(Protocols.MAINCODE, Protocols.L2g_player_charge.mainCode_value);
+			pMsg.put(Protocols.SUBCODE, Protocols.L2g_player_charge.subCode_value);
+			pMsg.put(Protocols.L2g_player_charge.UUID, player.getUuid());
+			pMsg.put(Protocols.L2g_player_charge.COIN, coin);//amount单位是分，转换成元，然后再乘配置的比率
+			pMsg.setChannel(gs.getChannel());
+			GameServerMsgSender.getInstance().addMsg(pMsg);
+		}else{
+			JSONObject json =new JSONObject();
+			json.put(Protocols.MAINCODE, Protocols.DB_player_charge.mainCode_value);
+			json.put(Protocols.SUBCODE, Protocols.DB_player_charge.subCode_value);
+			json.put(Protocols.DB_player_charge.UUID, uuid);
+			json.put(Protocols.DB_player_charge.COIN, coin);
+			json.put(Protocols.DB_player_charge.AMOUNT, amount/100);
+			DBService.getInstance().addMsg(json);
+		}
 	}
 
 	@Override

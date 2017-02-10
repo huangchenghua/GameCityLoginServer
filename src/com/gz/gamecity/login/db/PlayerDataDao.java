@@ -7,15 +7,20 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.gz.gamecity.bean.Mail;
 import com.gz.gamecity.bean.Player;
+import com.gz.gamecity.login.service.charts.ChartsService;
 import com.gz.gamecity.protocol.Protocols;
 import com.gz.util.DateUtil;
 
 public class PlayerDataDao extends BaseDao{
 
+	private final static Logger log = Logger.getLogger(PlayerDataDao.class);
+	
 	public Player getPlayer(String uuid) {
 		Connection conn = null;
 		PreparedStatement pstmt=null;
@@ -53,15 +58,16 @@ public class PlayerDataDao extends BaseDao{
 				}
 				
 				String lastday = player.getLastSignDate();
-				long date_diff = 0;
+				String curDate=DateUtil.getCurDateTime("yyyy-MM-dd");
 				if(lastday!=null){
+					long date_diff = 0;
 					try {
-						date_diff = DateUtil.dateDays(lastday,DateUtil.getCurDateTime("yyyy-MM-dd"));
+						date_diff = DateUtil.dateDays(lastday,curDate);
 					} catch (Exception e) {
 					}
-				}
-				if(date_diff != 1){
-					player.setSignDays(0);
+					if(date_diff != 1 && !lastday.equals(curDate)){
+						player.setSignDays(0);
+					}
 				}
 				
 				String[] heads_str = rs.getString("heads").split("~");
@@ -87,7 +93,7 @@ public class PlayerDataDao extends BaseDao{
 		PreparedStatement pstmt=null;
 		try {
 			conn=getConn();
-			String sql = "insert into player (uuid,name,sex,coin,head,lvl,finance,vip,charm,sign,charge_total,create_time,last_time) values(?,?,?,?,?,?,?,?,?,?,?,now(),now())";
+			String sql = "insert into player (uuid,name,sex,coin,head,lvl,finance,vip,charm,sign,charge_total,create_time,last_time,heads) values(?,?,?,?,?,?,?,?,?,?,?,now(),now(),?)";
 			pstmt=conn.prepareStatement(sql);
 			pstmt.setString(1, player.getUuid());
 			pstmt.setString(2, player.getName());
@@ -100,6 +106,12 @@ public class PlayerDataDao extends BaseDao{
 			pstmt.setInt(9, player.getCharm());
 			pstmt.setString(10, player.getSign());
 			pstmt.setLong(11, player.getCharge_total());
+			StringBuffer sb=new StringBuffer("");
+			for(int i=0;i<player.getHeads().length;i++){
+				sb.append(player.getHeads()[i]).append("~");
+			}
+			sb.deleteCharAt(sb.length()-1);
+			pstmt.setString(12, sb.toString());
 			pstmt.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -209,6 +221,17 @@ public class PlayerDataDao extends BaseDao{
 			sb.append("charm=").append(charm).append(",");
 		}
 		
+
+		if (j.containsKey(Protocols.G2l_data_change.ALMS_CNT)) {
+			byte nAlmsCnt = j.getByteValue(Protocols.G2l_data_change.ALMS_CNT);
+			sb.append("alms_cnt=").append(nAlmsCnt).append(",");
+		}
+		
+		if (j.containsKey(Protocols.G2l_data_change.ALMS_TIME)) {
+			String strAlmsTime = j.getString(Protocols.G2l_data_change.ALMS_TIME);
+			sb.append("alms_time='").append(strAlmsTime).append("',");
+		}
+		
 		String heads_str = j.getString(Protocols.G2l_data_change.HEADS);
 		if(heads_str!=null){
 			JSONArray arr = j.getJSONArray(Protocols.G2l_data_change.HEADS);
@@ -220,6 +243,7 @@ public class PlayerDataDao extends BaseDao{
 			sb.append("',");
 		}
 		
+
 		sb.deleteCharAt(sb.length()-1);
 		sb.append(" where uuid=?");
 		
@@ -229,6 +253,7 @@ public class PlayerDataDao extends BaseDao{
 			pstmt.setString(1, uuid);
 			pstmt.executeUpdate();
 		} catch (Exception e) {
+			System.out.println(sb.toString());
 			e.printStackTrace();
 		} finally {
 			close(null,pstmt,conn);
@@ -704,4 +729,123 @@ public class PlayerDataDao extends BaseDao{
 		
 	}
 	
+	public List<Player> searchFrozenPlayer(){
+		List<Player> list=new ArrayList<>();
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("select * from player where frozen = 1");
+			rs=pstmt.executeQuery();
+			while(rs.next()){
+				Player player = new  Player();
+				player.setUuid(rs.getString("uuid"));
+				player.setName(rs.getString("name"));
+				player.setSex(rs.getByte("sex"));
+				player.setCoin(rs.getLong("coin"));
+				player.setHead(rs.getInt("head"));
+				player.setLvl(rs.getInt("lvl"));
+				player.setFinance(rs.getInt("finance"));
+				player.setVip(rs.getInt("vip"));
+				player.setCharm(rs.getInt("charm"));
+				player.setSign(rs.getString("sign"));
+				player.setCharge_total(rs.getLong("charge_total"));
+				player.setFrozen(rs.getInt("frozen")==1);
+				player.setSilent(rs.getInt("silent")==1);
+				list.add(player);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(rs, pstmt, conn);
+		}
+		return list;
+	}
+	
+	public List<Player> searchSilentPlayer(){
+		List<Player> list=new ArrayList<>();
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("select * from player where silent = 1");
+			rs=pstmt.executeQuery();
+			while(rs.next()){
+				Player player = new  Player();
+				player.setUuid(rs.getString("uuid"));
+				player.setName(rs.getString("name"));
+				player.setSex(rs.getByte("sex"));
+				player.setCoin(rs.getLong("coin"));
+				player.setHead(rs.getInt("head"));
+				player.setLvl(rs.getInt("lvl"));
+				player.setFinance(rs.getInt("finance"));
+				player.setVip(rs.getInt("vip"));
+				player.setCharm(rs.getInt("charm"));
+				player.setSign(rs.getString("sign"));
+				player.setCharge_total(rs.getLong("charge_total"));
+				player.setFrozen(rs.getInt("frozen")==1);
+				player.setSilent(rs.getInt("silent")==1);
+				list.add(player);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(rs, pstmt, conn);
+		}
+		return list;
+	}
+	
+	public void chartsRecordAdd(JSONObject j) {
+		int nTime = j.getIntValue(Protocols.DB_charts_update_record.TIME);
+		String strUuid = j.getString(Protocols.DB_charts_update_record.UUID);
+		String strColumnName = j.getString(Protocols.DB_charts_update_record.COLUMN_NAME);
+		long nColumnValue = j.getLongValue(Protocols.DB_charts_update_record.COLUMN_VALUE);
+		
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			StringBuffer buffer = new StringBuffer();
+			buffer.append("insert into charts_record(time, uuid, ");
+			buffer.append(strColumnName);
+			buffer.append(") values(");
+			buffer.append(nTime);
+			buffer.append(", '");
+			buffer.append(strUuid);
+			buffer.append("',");
+			buffer.append(nColumnValue);
+			buffer.append(") on duplicate key update ");
+			buffer.append(strColumnName);
+			buffer.append("=");
+			buffer.append(strColumnName);
+			buffer.append("+");
+			buffer.append(nColumnValue);
+			
+			pstmt=conn.prepareStatement(buffer.toString());
+			pstmt.executeUpdate();
+			
+			//log.debug("sql=" + buffer.toString() + " ]");
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
+	
+	public void playerCharge(String uuid,long coin,int amount){
+		Connection conn=null;
+		PreparedStatement pstmt = null;
+		try {
+			conn=getConn();
+			pstmt=conn.prepareStatement("update player set coin=coin+"+coin+",charge_total=charge_total+"+amount+" where uuid=?");
+			pstmt.setString(1, uuid);
+			pstmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(null, pstmt, conn);
+		}
+	}
 }

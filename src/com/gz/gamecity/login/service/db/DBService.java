@@ -149,11 +149,92 @@ public class DBService {
 		case Protocols.DB_unsilent.subCode_value:
 			handleUnsilent(j);
 			break;
+		case Protocols.DB_search_frozen_player.subCode_value:
+			handleSearchFrozenPlayer(j);
+			break;
+		case Protocols.DB_search_silent_player.subCode_value:
+			handleSearchSilentPlayer(j);
+			break;
+		case Protocols.DB_charts_update_record.subCode_value:
+			handleChartsUpdateRecord(j);
+			break;
+		case Protocols.DB_player_charge.subCode_value:
+			handlePlayerCharge(j);
+			break;
 		default:
 			break;
 		}
 	}
+
 	
+	private void handlePlayerCharge(JSONObject j) {
+		String uuid = j.getString(Protocols.DB_player_charge.UUID);
+		long coin = j.getLongValue(Protocols.DB_player_charge.COIN);
+		int amount = j.getIntValue(Protocols.DB_player_charge.AMOUNT);
+		dao.playerCharge(uuid, coin,amount);
+	}
+
+	private void handleSearchFrozenPlayer(JSONObject j) {
+		List<Player> list=dao.searchFrozenPlayer();
+		ClientMsg msg = new ClientMsg();
+		String uuid = j.getString(Protocols.DB_search_frozen_player.GM_UUID);
+		Player gm=PlayerManager.getInstance().getOnlineGm().get(uuid);
+		if(gm==null)
+			return;
+		msg.setChannel(gm.getChannel());
+		msg.put(Protocols.MAINCODE, Protocols.L2gm_search_player.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.L2gm_search_player.subCode_value);
+		JSONObject[] ps=new JSONObject[list.size()];
+		for (int i = 0; i < ps.length; i++) {
+			ps[i] = new JSONObject();
+			ps[i].put(Protocols.L2gm_search_player.Player_info.NAME, list.get(i).getName());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.UUID, list.get(i).getUuid());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.COIN, list.get(i).getCoin());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.HEAD, list.get(i).getHead());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.VIP, list.get(i).getVip());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.CHARGE_TOTAL, list.get(i).getCharge_total());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.SEX, list.get(i).getSex());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.LVL, list.get(i).getLvl());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.FINANCE, list.get(i).getFinance());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.CHARM, list.get(i).getCharm());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.SILENT, list.get(i).isSilent());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.FROZEN, list.get(i).isFrozen());
+		}
+		msg.put(Protocols.L2gm_search_player.PLAYER_INFO, ps);
+		GmMsgSender.getInstance().addMsg(msg); 
+	}
+
+	private void handleSearchSilentPlayer(JSONObject j) {
+		List<Player> list=dao.searchSilentPlayer();
+		ClientMsg msg = new ClientMsg();
+		String uuid = j.getString(Protocols.DB_search_silent_player.GM_UUID);
+		Player gm=PlayerManager.getInstance().getOnlineGm().get(uuid);
+		if(gm==null)
+			return;
+		msg.setChannel(gm.getChannel());
+		msg.put(Protocols.MAINCODE, Protocols.L2gm_search_player.mainCode_value);
+		msg.put(Protocols.SUBCODE, Protocols.L2gm_search_player.subCode_value);
+		JSONObject[] ps=new JSONObject[list.size()];
+		for (int i = 0; i < ps.length; i++) {
+			ps[i] = new JSONObject();
+			ps[i].put(Protocols.L2gm_search_player.Player_info.NAME, list.get(i).getName());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.UUID, list.get(i).getUuid());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.COIN, list.get(i).getCoin());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.HEAD, list.get(i).getHead());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.VIP, list.get(i).getVip());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.CHARGE_TOTAL, list.get(i).getCharge_total());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.SEX, list.get(i).getSex());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.LVL, list.get(i).getLvl());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.FINANCE, list.get(i).getFinance());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.CHARM, list.get(i).getCharm());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.SILENT, list.get(i).isSilent());
+			ps[i].put(Protocols.L2gm_search_player.Player_info.FROZEN, list.get(i).isFrozen());
+		}
+		msg.put(Protocols.L2gm_search_player.PLAYER_INFO, ps);
+		GmMsgSender.getInstance().addMsg(msg); 
+		
+	}
+
 	private void handleUnsilent(JSONObject j) {
 		String uuid = j.getString(Protocols.DB_unsilent.UUID);
 		dao.unsilentPlayer(uuid);
@@ -241,6 +322,7 @@ public class DBService {
 			msg.put(Protocols.L2g_friend_other_info.UUID, player.getUuid());
 			msg.put(Protocols.L2g_friend_other_info.SEX, player.getSex());
 			msg.put(Protocols.L2g_friend_other_info.LV, player.getLvl());
+			msg.put(Protocols.L2g_friend_other_info.EXP, player.getExp());
 			msg.put(Protocols.L2g_friend_other_info.NAME, player.getName());
 			msg.put(Protocols.L2g_friend_other_info.HEAD, player.getHead());
 			msg.put(Protocols.L2g_friend_other_info.VIP, player.getVip());
@@ -432,5 +514,9 @@ public class DBService {
 		GameServerMsgSender.getInstance().addMsg(msg);
 	}
 	
+	
+	private void handleChartsUpdateRecord(JSONObject j) {
+		dao.chartsRecordAdd(j);
+	}
 	
 }

@@ -11,6 +11,7 @@ public class ConfigField{
 	public static final String DB_HOST = "db_host";
 	public static final String SDKVERIFYURL = "sdkVerifyUrl";
 	public static final String HTTP_PORT = "http_port";
+	public static final String CHARGE_RATE = "charge_rate";
 	public static final String PLAYER_INIT_COIN = "player_init_coin";
 
 }
