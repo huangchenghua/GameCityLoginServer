@@ -30,7 +30,7 @@ public class PlayerLoginHandler implements HttpServerMsgHandler{
 	}
 
 	@Override
-	public void doPost(ChannelHandlerContext ctx, FullHttpRequest request) {
+	public void doPost(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, String> parmMap) {
 		String jsonStr = request.content().toString(Charsets.toCharset(CharEncoding.UTF_8));
 		QueryStringDecoder queryDecoder = new QueryStringDecoder(jsonStr, false);
 		JSONObject json=new JSONObject();
@@ -57,7 +57,7 @@ public class PlayerLoginHandler implements HttpServerMsgHandler{
 	}
 
 	@Override
-	public void doGet(ChannelHandlerContext ctx, FullHttpRequest request) {
+	public void doGet(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, String> parmMap) {
 		HttpDecoderAndEncoder.Response(ctx, request, "error");
 		
 	}

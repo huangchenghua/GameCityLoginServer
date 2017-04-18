@@ -1,5 +1,7 @@
 package com.gz.gamecity.login.handler.impl;
 
+import java.util.Map;
+
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.codec.Charsets;
 import org.apache.log4j.Logger;
@@ -33,7 +35,7 @@ public class ChargeHandler implements HttpServerMsgHandler {
 	}
 
 	@Override
-	public void doPost(ChannelHandlerContext ctx, FullHttpRequest request) {
+	public void doPost(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, String> parmMap) {
 		String jsonStr = request.content().toString(Charsets.toCharset(CharEncoding.UTF_8));
 		System.out.println(jsonStr);
 		log.info(jsonStr);
@@ -53,14 +55,14 @@ public class ChargeHandler implements HttpServerMsgHandler {
 		String s = "amount="+amount+"&appId="+appId_gamecity+"&notifyParameters="+notifyParameters+"&orderId="+orderId+"&payWay="+payWay+"&status="+status+"&uuid="+uuid+"&appsecret="+appsecret;
 		String md5_str = MD5Util.string2MD5(s);
 		if(!md5_str.equals(sign)){
-			log.warn("md5验证失败");
+			log.warn("md5楠岃瘉澶辫触");
 			return;
 		}
 		j.put(Protocols.MAINCODE, Protocols.DB_charge_record.mainCode_value);
 		j.put(Protocols.SUBCODE, Protocols.DB_charge_record.subCode_value);
 		DBService.getInstance().addMsg(j);
-		// TODO 执行业务逻辑操作
-		long coin = amount/100*Config.instance().getIValue(ConfigField.CHARGE_RATE);//amount单位是分，转换成元，然后再乘配置的比率
+		// TODO 鎵ц涓氬姟閫昏緫鎿嶄綔
+		long coin = amount/100*Config.instance().getIValue(ConfigField.CHARGE_RATE);//amount鍗曚綅鏄垎锛岃浆鎹㈡垚鍏冿紝鐒跺悗鍐嶄箻閰嶇疆鐨勬瘮鐜�
 		Player player = PlayerManager.getInstance().getOnlinePlayer(uuid);
 		if(player!=null){
 			GameServer gs = GameServerService.getInstance().getGameServer(player.getServerId());
@@ -68,7 +70,7 @@ public class ChargeHandler implements HttpServerMsgHandler {
 			pMsg.put(Protocols.MAINCODE, Protocols.L2g_player_charge.mainCode_value);
 			pMsg.put(Protocols.SUBCODE, Protocols.L2g_player_charge.subCode_value);
 			pMsg.put(Protocols.L2g_player_charge.UUID, player.getUuid());
-			pMsg.put(Protocols.L2g_player_charge.COIN, coin);//amount单位是分，转换成元，然后再乘配置的比率
+			pMsg.put(Protocols.L2g_player_charge.COIN, coin);//amount鍗曚綅鏄垎锛岃浆鎹㈡垚鍏冿紝鐒跺悗鍐嶄箻閰嶇疆鐨勬瘮鐜�
 			pMsg.setChannel(gs.getChannel());
 			GameServerMsgSender.getInstance().addMsg(pMsg);
 		}else{
@@ -83,7 +85,7 @@ public class ChargeHandler implements HttpServerMsgHandler {
 	}
 
 	@Override
-	public void doGet(ChannelHandlerContext ctx, FullHttpRequest request) {
+	public void doGet(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, String> parmMap) {
 		HttpDecoderAndEncoder.Response(ctx, request, "error");
 	}
 
